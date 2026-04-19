@@ -90,7 +90,7 @@ button:disabled {
 
 .game-panel {
   position: relative;
-  padding: var(--space-4);
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -101,12 +101,14 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
-  margin-bottom: var(--space-4);
+  grid-area: hud;
   padding: 1px;
   border: 1px solid var(--line);
-  border-radius: calc(var(--radius-lg) - 4px);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(255, 214, 121, 0.06));
+  border-radius: 18px;
+  background: rgba(14, 20, 20, 0.82);
+  backdrop-filter: blur(8px);
   overflow: hidden;
+  box-shadow: 0 10px 24px rgba(5, 10, 10, 0.32);
 }
 
 .hud-block {
@@ -150,6 +152,15 @@ button:disabled {
 .board-frame {
   position: relative;
   min-height: 380px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "hud pause"
+    "canvas canvas";
+  column-gap: 12px;
+  row-gap: 14px;
+  padding: 14px;
   border: 1px solid var(--line);
   border-radius: 28px;
   overflow: hidden;
@@ -172,11 +183,11 @@ button:disabled {
 }
 
 .board-pause-button {
-  position: absolute;
-  top: 14px;
-  right: 14px;
+  position: relative;
+  grid-area: pause;
   z-index: 3;
   min-width: 116px;
+  align-self: start;
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -194,9 +205,11 @@ button:disabled {
 }
 
 #game-board {
+  grid-area: canvas;
   display: block;
   width: 100%;
   height: auto;
+  justify-self: stretch;
 }
 
 .overlay-message {
@@ -208,7 +221,7 @@ button:disabled {
   color: var(--ink);
   text-align: center;
   padding: var(--space-5);
-  z-index: 2;
+  z-index: 6;
 }
 
 .overlay-message[hidden] {
@@ -550,10 +563,6 @@ button:disabled {
   .app-shell {
     grid-template-columns: 1fr;
   }
-
-  .hud {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 680px) {
@@ -563,13 +572,13 @@ button:disabled {
   }
 
   .game-panel {
-    padding: 10px;
+    padding: 0;
   }
 
   .hud {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1px;
-    margin-bottom: 10px;
+    border-radius: 14px;
   }
 
   .hud-block {
@@ -588,6 +597,9 @@ button:disabled {
 
   .board-frame {
     min-height: 400px;
+    column-gap: 8px;
+    row-gap: 10px;
+    padding: 10px;
     border-radius: 18px;
   }
 
@@ -701,5 +713,100 @@ button:disabled {
 
   .dock-actions-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) and (max-height: 760px) {
+  .app-shell {
+    padding-bottom: 176px;
+  }
+
+  .board-frame {
+    min-height: 320px;
+  }
+
+  .control-dock {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .dock-header {
+    gap: 4px;
+  }
+
+  .dock-label {
+    margin-bottom: 2px;
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+  }
+
+  .dock-selection-summary {
+    min-height: 0;
+    margin-bottom: 4px;
+    font-size: 0.84rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tower-grid--dock {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .tower-grid--dock .tower-choice {
+    min-height: 66px;
+    padding: 6px 4px 5px;
+    border-radius: 12px;
+    gap: 4px;
+  }
+
+  .tower-grid--dock .tower-choice__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .tower-grid--dock .tower-choice__icon img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .tower-grid--dock .tower-choice__key {
+    font-size: 0.64rem;
+    line-height: 1;
+    color: color-mix(in srgb, var(--ink-muted) 88%, white 12%);
+  }
+
+  .tower-grid--dock .tower-choice.is-selected .tower-choice__key {
+    color: rgba(255, 246, 225, 0.88);
+  }
+
+  .dock-actions-layout {
+    gap: 8px;
+  }
+
+  .dock-pad {
+    gap: 6px;
+  }
+
+  .dock-pad button,
+  .dock-actions button {
+    min-height: 38px;
+    border-radius: 12px;
+  }
+
+  .dock-actions button {
+    font-size: 0.9rem;
+  }
+
+  .control-dock .dock-section {
+    min-width: 0;
+  }
+
+  .tower-choice__name {
+    display: none;
   }
 }

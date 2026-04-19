@@ -494,8 +494,10 @@ function syncHud() {
     ? ` Upgrade: ${tower.level < 3 ? `cost ${Math.round(TOWER_TYPES[tower.type].cost * (0.7 + tower.level * 0.25))}` : "maxed"}`
     : "";
   const selectionText = `${definition.name} tower costs ${definition.cost}. Best vs ${definition.counters}. ${definition.description} ${canBuild ? "Build ready." : "Build blocked."}${upgradeNote}`;
+  const compactSelectionText = `${definition.name} • ${definition.cost}G • ${canBuild ? "Ready" : "Blocked"}${tower ? ` • Lv.${tower.level}` : ""}`;
   for (const summary of selectionSummaries) {
-    summary.textContent = selectionText;
+    const isDockSummary = summary.classList.contains("dock-selection-summary");
+    summary.textContent = isDockSummary ? compactSelectionText : selectionText;
   }
   pauseButton.textContent = state.status === "paused" ? "Resume" : "Pause";
   pauseButton.disabled = ["menu", "game-over"].includes(state.status);
