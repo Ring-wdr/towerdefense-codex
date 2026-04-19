@@ -43,3 +43,24 @@ npm run dev
 배포 주소:
 
 - [https://ring-wdr.github.io/towerdefense-codex/](https://ring-wdr.github.io/towerdefense-codex/)
+
+## GitHub Score Submission Setup
+
+게임 오버 시 GitHub 이슈 댓글로 점수를 기록하려면 브라우저용 GitHub App과 아래 환경 변수를 설정해야 합니다.
+
+- `VITE_GITHUB_APP_CLIENT_ID`
+- `VITE_GITHUB_LEADERBOARD_ISSUE_NUMBER`
+- `VITE_GITHUB_REPO_OWNER`
+- `VITE_GITHUB_REPO_NAME`
+- `VITE_GITHUB_REDIRECT_URI`
+- `VITE_APP_BUILD` (선택)
+
+로컬 개발에서는 GitHub App에 등록한 로컬 주소를 `VITE_GITHUB_REDIRECT_URI`로 사용하세요. GitHub Pages 배포에서는 배포 주소와 정확히 일치하는 URL을 사용해야 합니다.
+
+## Manual Check
+
+1. 게임을 시작해 `Game Over` 화면까지 진행합니다.
+2. `GitHub에 점수 기록` 버튼을 누릅니다.
+3. GitHub App 권한 승인을 완료합니다.
+4. 페이지가 게임으로 돌아온 뒤 성공 또는 실패 상태 메시지가 보이는지 확인합니다.
+5. 고정된 `Leaderboard` 이슈에 점수, 웨이브, 남은 목숨, 시간, 빌드 정보가 댓글로 남았는지 확인합니다.
