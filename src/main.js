@@ -24,6 +24,7 @@ import {
   upgradeTowerAtCursor,
 } from "./game/logic.js";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, createIcons } from "lucide";
+import packageJson from "../package.json";
 import attackTowerSpriteUrl from "./assets/towers/attack-v2.png";
 import bossEnemySpriteUrl from "./assets/enemies/boss.png";
 import cannonTowerSpriteUrl from "./assets/towers/cannon-v2.png";
@@ -39,6 +40,29 @@ import shellbackEnemySpriteUrl from "./assets/enemies/shellback.png";
 import slowTowerSpriteUrl from "./assets/towers/slow-v2.png";
 import swarmlingEnemySpriteUrl from "./assets/enemies/swarmling.png";
 import wispEnemySpriteUrl from "./assets/enemies/wisp.png";
+import {
+  buildGitHubAuthorizeUrl,
+  clearPendingAuth,
+  createPkcePair,
+  exchangeGitHubCodeForToken,
+  parseGitHubAuthResult,
+  persistPendingAuth,
+  readPendingAuth,
+} from "./github/auth.js";
+import { getGitHubScoreConfig, validateGitHubScoreConfig } from "./github/config.js";
+import {
+  buildScoreCommentBody,
+  createScoreSnapshot,
+  getBuildLabel,
+  postScoreComment,
+} from "./github/score-comment.js";
+import {
+  createScoreSubmissionKey,
+  createSubmissionState,
+  markSubmissionFailed,
+  markSubmissionStarted,
+  markSubmissionSucceeded,
+} from "./github/submission-state.js";
 
 const canvas = document.getElementById("game-board");
 const context = canvas.getContext("2d");
@@ -48,6 +72,8 @@ const overlayTitle = document.getElementById("overlay-title");
 const overlayBody = document.getElementById("overlay-body");
 const overlayPrimary = document.getElementById("overlay-primary");
 const overlaySecondary = document.getElementById("overlay-secondary");
+const overlayScoreAction = document.getElementById("overlay-score-action");
+const overlayScoreStatus = document.getElementById("overlay-score-status");
 const towerActions = document.getElementById("tower-actions");
 const upgradeAction = document.getElementById("upgrade-action");
 const deleteAction = document.getElementById("delete-action");
@@ -63,8 +89,17 @@ const towerButtons = Array.from(document.querySelectorAll("[data-tower]"));
 const touchButtons = Array.from(document.querySelectorAll("[data-move], [data-action]"));
 
 let state = createInitialState();
+let scoreSubmission = createSubmissionState();
 
 const roadCells = getPathCells();
+const githubScoreConfig = getGitHubScoreConfig({
+  env: import.meta.env,
+  fallbackLocation: `${window.location.origin}${window.location.pathname}`,
+});
+const buildLabel = getBuildLabel({
+  envBuild: import.meta.env.VITE_APP_BUILD,
+  packageVersion: packageJson.version,
+});
 const towerSpriteUrls = {
   attack: attackTowerSpriteUrl,
   cannon: cannonTowerSpriteUrl,
@@ -92,6 +127,10 @@ const roadTileSprites = loadSpriteList([roadTile1Url, roadTile2Url]);
 
 hydrateTowerIcons();
 hydrateControlIcons();
+resumeScoreSubmissionFromCallback().catch((error) => {
+  scoreSubmission = markSubmissionFailed(scoreSubmission, scoreSubmission.activeKey || "", error.message);
+  render();
+});
 
 function render() {
   drawBoard();
@@ -502,6 +541,7 @@ function syncHud() {
   }
   pauseButton.textContent = state.status === "paused" ? "Resume" : "Pause";
   pauseButton.disabled = ["menu", "game-over"].includes(state.status);
+  syncScoreSubmissionUi();
 
   overlay.hidden = state.status === "running";
   if (state.status === "menu") {
@@ -512,6 +552,7 @@ function syncHud() {
     overlayPrimary.textContent = "Start Game";
     overlayPrimary.dataset.action = "start";
     overlaySecondary.hidden = true;
+    overlayScoreAction.hidden = true;
   } else if (state.status === "paused") {
     overlayKicker.textContent = "Paused";
     overlayTitle.textContent = "Game Stopped Temporarily";
@@ -520,6 +561,7 @@ function syncHud() {
     overlayPrimary.dataset.action = "resume";
     overlaySecondary.hidden = false;
     overlaySecondary.textContent = "Restart";
+    overlayScoreAction.hidden = true;
   } else if (state.status === "game-over") {
     overlayKicker.textContent = "Game Over";
     overlayTitle.textContent = `Final Score: ${state.score}`;
@@ -527,6 +569,7 @@ function syncHud() {
     overlayPrimary.textContent = "Restart";
     overlayPrimary.dataset.action = "restart";
     overlaySecondary.hidden = true;
+    overlayScoreAction.hidden = false;
   }
 
   syncTowerActions(tower);
@@ -534,6 +577,39 @@ function syncHud() {
   for (const button of towerButtons) {
     button.classList.toggle("is-selected", button.dataset.tower === state.selectedTowerType);
   }
+}
+
+function getOverlayScoreStatusText() {
+  if (scoreSubmission.status === "submitting") {
+    return "GitHub 로그인 및 점수 기록을 진행하고 있습니다.";
+  }
+
+  if (scoreSubmission.status === "success") {
+    return "이 점수는 GitHub 리더보드 이슈에 기록되었습니다.";
+  }
+
+  if (scoreSubmission.status === "error") {
+    return scoreSubmission.errorMessage || "GitHub 점수 기록에 실패했습니다. 다시 시도해 주세요.";
+  }
+
+  if (state.status !== "game-over") {
+    return "";
+  }
+
+  if (validateGitHubScoreConfig(githubScoreConfig).length > 0) {
+    return "GitHub 점수 기록 설정이 아직 완료되지 않았습니다.";
+  }
+
+  return "게임 오버 후 GitHub 계정으로 로그인해 점수를 기록할 수 있습니다.";
+}
+
+function syncScoreSubmissionUi() {
+  const statusText = getOverlayScoreStatusText();
+  overlayScoreAction.disabled = scoreSubmission.status === "submitting" || scoreSubmission.status === "success";
+  overlayScoreStatus.hidden = !statusText;
+  overlayScoreStatus.textContent = statusText;
+  overlayScoreStatus.classList.toggle("is-error", scoreSubmission.status === "error");
+  overlayScoreStatus.classList.toggle("is-success", scoreSubmission.status === "success");
 }
 
 function syncTowerActions(selectedTower) {
@@ -563,6 +639,93 @@ function syncTowerActions(selectedTower) {
 function update(action) {
   state = action(state);
   render();
+}
+
+function resetRunState() {
+  state = restartGame();
+  scoreSubmission = createSubmissionState();
+  render();
+}
+
+async function beginScoreSubmission() {
+  const missing = validateGitHubScoreConfig(githubScoreConfig);
+  if (missing.length > 0) {
+    scoreSubmission = markSubmissionFailed(scoreSubmission, "", "GitHub 점수 기록 설정이 비어 있습니다.");
+    render();
+    return;
+  }
+
+  const snapshot = createScoreSnapshot(state, {
+    buildLabel,
+    timeZone: "Asia/Seoul",
+  });
+  const submissionKey = createScoreSubmissionKey(snapshot);
+  if (scoreSubmission.lastSubmittedKey === submissionKey || scoreSubmission.status === "submitting") {
+    return;
+  }
+
+  scoreSubmission = markSubmissionStarted(scoreSubmission, submissionKey);
+  render();
+
+  const { codeChallenge, codeVerifier } = await createPkcePair();
+  const authState = crypto.randomUUID();
+  persistPendingAuth(window.sessionStorage, {
+    codeVerifier,
+    scoreSnapshot: snapshot,
+    state: authState,
+  });
+  window.location.assign(
+    buildGitHubAuthorizeUrl({
+      clientId: githubScoreConfig.clientId,
+      redirectUri: githubScoreConfig.redirectUri,
+      state: authState,
+      codeChallenge,
+    }),
+  );
+}
+
+async function resumeScoreSubmissionFromCallback() {
+  const authResult = parseGitHubAuthResult(new URL(window.location.href));
+  if (authResult.status === "idle") {
+    return;
+  }
+
+  const pending = readPendingAuth(window.sessionStorage);
+  if (!pending || pending.state !== authResult.state) {
+    clearPendingAuth(window.sessionStorage);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
+  const submissionKey = createScoreSubmissionKey(pending.scoreSnapshot);
+  if (authResult.status === "error") {
+    scoreSubmission = markSubmissionFailed(scoreSubmission, submissionKey, "GitHub 로그인이 취소되었습니다.");
+    clearPendingAuth(window.sessionStorage);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
+  try {
+    scoreSubmission = markSubmissionStarted(scoreSubmission, submissionKey);
+    const accessToken = await exchangeGitHubCodeForToken({
+      clientId: githubScoreConfig.clientId,
+      code: authResult.code,
+      codeVerifier: pending.codeVerifier,
+    });
+    await postScoreComment({
+      accessToken,
+      body: buildScoreCommentBody(pending.scoreSnapshot),
+      issueNumber: githubScoreConfig.issueNumber,
+      repoName: githubScoreConfig.repoName,
+      repoOwner: githubScoreConfig.repoOwner,
+    });
+    scoreSubmission = markSubmissionSucceeded(scoreSubmission, submissionKey);
+  } catch (error) {
+    scoreSubmission = markSubmissionFailed(scoreSubmission, submissionKey, error.message);
+  } finally {
+    clearPendingAuth(window.sessionStorage);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 document.addEventListener("keydown", (event) => {
@@ -608,8 +771,7 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "p") {
     update((current) => togglePause(current));
   } else if (key === "r") {
-    state = restartGame();
-    render();
+    resetRunState();
   }
 });
 
@@ -639,14 +801,19 @@ overlayPrimary.addEventListener("click", () => {
   } else if (overlayPrimary.dataset.action === "resume") {
     update((current) => togglePause(current));
   } else if (overlayPrimary.dataset.action === "restart") {
-    state = restartGame();
-    render();
+    resetRunState();
   }
 });
 
 overlaySecondary.addEventListener("click", () => {
-  state = restartGame();
-  render();
+  resetRunState();
+});
+
+overlayScoreAction.addEventListener("click", () => {
+  beginScoreSubmission().catch((error) => {
+    scoreSubmission = markSubmissionFailed(scoreSubmission, scoreSubmission.activeKey || "", error.message);
+    render();
+  });
 });
 
 pauseButton.addEventListener("click", () => {
@@ -674,8 +841,7 @@ for (const button of touchButtons) {
     if (action === "upgrade") update((current) => upgradeTowerAtCursor(current));
     if (action === "pause") update((current) => togglePause(current));
     if (action === "restart") {
-      state = restartGame();
-      render();
+      resetRunState();
     }
   });
 }
