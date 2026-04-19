@@ -79,7 +79,6 @@ button:disabled {
   margin: 0 auto;
 }
 
-.game-panel,
 .card {
   background:
     linear-gradient(180deg, rgba(255, 245, 214, 0.06), rgba(0, 0, 0, 0)),
@@ -92,6 +91,10 @@ button:disabled {
 .game-panel {
   position: relative;
   padding: var(--space-4);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .hud {
@@ -108,9 +111,11 @@ button:disabled {
 
 .hud-block {
   padding: 11px 14px 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 222, 154, 0.11), rgba(0, 0, 0, 0)),
-    linear-gradient(180deg, var(--panel-strong), var(--panel-inset));
+  background: color-mix(in srgb, var(--panel-strong) 82%, black 18%);
+}
+
+.hud-block:nth-child(2n) {
+  background: color-mix(in srgb, var(--panel) 76%, black 24%);
 }
 
 .hud-block strong {
@@ -144,6 +149,7 @@ button:disabled {
 
 .board-frame {
   position: relative;
+  min-height: 380px;
   border: 1px solid var(--line);
   border-radius: 28px;
   overflow: hidden;
@@ -244,6 +250,7 @@ button:disabled {
 
 .overlay-card {
   width: min(100%, 460px);
+  min-height: 320px;
   padding: 28px;
   border-radius: 26px;
   border: 1px solid rgba(255, 216, 145, 0.28);
@@ -251,6 +258,8 @@ button:disabled {
     linear-gradient(180deg, rgba(255, 220, 155, 0.16), rgba(0, 0, 0, 0)),
     linear-gradient(180deg, rgba(47, 37, 24, 0.96), rgba(28, 31, 23, 0.94));
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.44);
+  display: grid;
+  align-content: center;
 }
 
 .overlay-kicker {
@@ -578,6 +587,7 @@ button:disabled {
   }
 
   .board-frame {
+    min-height: 400px;
     border-radius: 18px;
   }
 
@@ -599,6 +609,7 @@ button:disabled {
 
   .overlay-card {
     width: min(100%, 360px);
+    min-height: 340px;
     padding: 18px;
   }
 
@@ -673,6 +684,10 @@ button:disabled {
   .dock-actions button {
     min-height: 46px;
     font-weight: 700;
+  }
+
+  .dock-selection-summary {
+    margin-bottom: 8px;
   }
 
   .dock-pad button {
