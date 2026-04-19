@@ -39,3 +39,31 @@ export function buildScoreCommentBody(snapshot) {
     `Build: ${snapshot.build}`,
   ].join("\n");
 }
+
+export async function postScoreComment({
+  accessToken,
+  body,
+  issueNumber,
+  repoName,
+  repoOwner,
+  fetchImpl = fetch,
+}) {
+  const response = await fetchImpl(
+    `https://api.github.com/repos/${repoOwner}/${repoName}/issues/${issueNumber}/comments`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({ body }),
+    },
+  );
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.message || "GitHub comment submission failed");
+  }
+  return { htmlUrl: payload.html_url || "" };
+}

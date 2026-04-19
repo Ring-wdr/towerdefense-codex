@@ -8,8 +8,12 @@ import {
 } from "../src/github/score-comment.js";
 import {
   buildGitHubAuthorizeUrl,
+  clearPendingAuth,
   createPkcePair,
+  exchangeGitHubCodeForToken,
   parseGitHubAuthResult,
+  persistPendingAuth,
+  readPendingAuth,
 } from "../src/github/auth.js";
 import {
   getGitHubScoreConfig,
@@ -22,6 +26,7 @@ import {
   markSubmissionStarted,
   markSubmissionSucceeded,
 } from "../src/github/submission-state.js";
+import { postScoreComment } from "../src/github/score-comment.js";
 
 test("score snapshot captures game-over values", () => {
   const snapshot = createScoreSnapshot(
@@ -141,4 +146,69 @@ test("callback parser returns denied status and code status", () => {
     state: "state-1",
     status: "code",
   });
+});
+
+test("pending auth round-trips through session storage", () => {
+  const store = new Map();
+  const storage = {
+    getItem: (key) => store.get(key) ?? null,
+    setItem: (key, value) => store.set(key, value),
+    removeItem: (key) => store.delete(key),
+  };
+
+  persistPendingAuth(storage, {
+    codeVerifier: "verifier",
+    scoreSnapshot: { score: 1 },
+    state: "state-1",
+  });
+  assert.deepEqual(readPendingAuth(storage), {
+    codeVerifier: "verifier",
+    scoreSnapshot: { score: 1 },
+    state: "state-1",
+  });
+  clearPendingAuth(storage);
+  assert.equal(readPendingAuth(storage), null);
+});
+
+test("token exchange posts code verifier to GitHub", async () => {
+  let request;
+  const fetchImpl = async (url, init) => {
+    request = { url, init };
+    return { ok: true, json: async () => ({ access_token: "token-123" }) };
+  };
+
+  const token = await exchangeGitHubCodeForToken({
+    clientId: "client123",
+    code: "code123",
+    codeVerifier: "verifier123",
+    fetchImpl,
+  });
+
+  assert.equal(token, "token-123");
+  assert.match(request.url, /github\.com\/login\/oauth\/access_token/);
+  assert.match(String(request.init.body), /code_verifier=verifier123/);
+});
+
+test("score comment submission posts markdown body to issue comments api", async () => {
+  let request;
+  const fetchImpl = async (url, init) => {
+    request = { url, init };
+    return {
+      ok: true,
+      json: async () => ({ html_url: "https://github.com/example/repo/issues/12#issuecomment-1" }),
+    };
+  };
+
+  const response = await postScoreComment({
+    accessToken: "token-123",
+    body: "Score: 1240",
+    issueNumber: 12,
+    repoName: "towerdefense-codex",
+    repoOwner: "ring-wdr",
+    fetchImpl,
+  });
+
+  assert.equal(response.htmlUrl, "https://github.com/example/repo/issues/12#issuecomment-1");
+  assert.match(request.url, /repos\/ring-wdr\/towerdefense-codex\/issues\/12\/comments/);
+  assert.match(request.init.headers.Authorization, /^Bearer token-123$/);
 });

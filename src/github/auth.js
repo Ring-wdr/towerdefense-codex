@@ -21,6 +21,8 @@ function getCryptoApi() {
   throw new Error("Web Crypto API is not available.");
 }
 
+const PENDING_AUTH_KEY = "tower-defense.github-score.pending-auth";
+
 export async function createPkcePair() {
   const cryptoApi = getCryptoApi();
   const verifierBytes = cryptoApi.getRandomValues(new Uint8Array(32));
@@ -61,4 +63,38 @@ export function parseGitHubAuthResult(url) {
     state: searchUrl.searchParams.get("state") || "",
     status: code ? "code" : "idle",
   };
+}
+
+export function persistPendingAuth(storage, payload) {
+  storage.setItem(PENDING_AUTH_KEY, JSON.stringify(payload));
+}
+
+export function readPendingAuth(storage) {
+  const raw = storage.getItem(PENDING_AUTH_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function clearPendingAuth(storage) {
+  storage.removeItem(PENDING_AUTH_KEY);
+}
+
+export async function exchangeGitHubCodeForToken({ clientId, code, codeVerifier, fetchImpl = fetch }) {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    code,
+    code_verifier: codeVerifier,
+  });
+  const response = await fetchImpl("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+    },
+    body: body.toString(),
+  });
+  const payload = await response.json();
+  if (!response.ok || !payload.access_token) {
+    throw new Error(payload.error_description || "GitHub token exchange failed");
+  }
+  return payload.access_token;
 }
