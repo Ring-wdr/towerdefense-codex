@@ -56,13 +56,20 @@ const scoreValue = document.getElementById("score-value");
 const livesValue = document.getElementById("lives-value");
 const statusValue = document.getElementById("status-value");
 const pauseButton = document.getElementById("pause-button");
-const selectionSummary = document.getElementById("selection-summary");
+const selectionSummaries = Array.from(document.querySelectorAll("[data-selection-summary]"));
 const towerButtons = Array.from(document.querySelectorAll("[data-tower]"));
 const touchButtons = Array.from(document.querySelectorAll("[data-move], [data-action]"));
 
 let state = createInitialState();
 
 const roadCells = getPathCells();
+const towerSpriteUrls = {
+  attack: attackTowerSpriteUrl,
+  cannon: cannonTowerSpriteUrl,
+  hunter: hunterTowerSpriteUrl,
+  magic: magicTowerSpriteUrl,
+  slow: slowTowerSpriteUrl,
+};
 const towerSprites = loadSprites({
   attack: attackTowerSpriteUrl,
   cannon: cannonTowerSpriteUrl,
@@ -80,6 +87,8 @@ const enemySprites = loadSprites({
 });
 const grassTileSprites = loadSpriteList([grassTile1Url, grassTile2Url]);
 const roadTileSprites = loadSpriteList([roadTile1Url, roadTile2Url]);
+
+hydrateTowerIcons();
 
 function render() {
   drawBoard();
@@ -215,6 +224,14 @@ function drawTile(x, y, sprites, fallbackColor) {
 
   context.fillStyle = fallbackColor;
   context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
+}
+
+function hydrateTowerIcons() {
+  const iconImages = Array.from(document.querySelectorAll("[data-tower-icon]"));
+  for (const image of iconImages) {
+    const towerType = image.dataset.towerIcon;
+    image.src = towerSpriteUrls[towerType];
+  }
 }
 
 function getEnemySpriteSize(enemy, species = null) {
@@ -463,7 +480,10 @@ function syncHud() {
   const upgradeNote = tower
     ? ` Upgrade: ${tower.level < 3 ? `cost ${Math.round(TOWER_TYPES[tower.type].cost * (0.7 + tower.level * 0.25))}` : "maxed"}`
     : "";
-  selectionSummary.textContent = `${definition.name} tower costs ${definition.cost}. Best vs ${definition.counters}. ${definition.description} ${canBuild ? "Build ready." : "Build blocked."}${upgradeNote}`;
+  const selectionText = `${definition.name} tower costs ${definition.cost}. Best vs ${definition.counters}. ${definition.description} ${canBuild ? "Build ready." : "Build blocked."}${upgradeNote}`;
+  for (const summary of selectionSummaries) {
+    summary.textContent = selectionText;
+  }
   pauseButton.textContent = state.status === "paused" ? "Resume" : "Pause";
   pauseButton.disabled = ["menu", "game-over"].includes(state.status);
 

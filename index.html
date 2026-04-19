@@ -62,22 +62,40 @@
 
         <section class="control-dock control-dock--hybrid" aria-label="Quick play controls">
           <div class="dock-section">
-            <p class="dock-label">Pick Tower</p>
-            <div class="dock-tower-strip">
-              <button type="button" data-tower="attack">1 Attack</button>
-              <button type="button" data-tower="slow">2 Slow</button>
-              <button type="button" data-tower="magic">3 Magic</button>
-              <button type="button" data-tower="cannon">4 Cannon</button>
-              <button type="button" data-tower="hunter">5 Hunter</button>
+            <div class="dock-header">
+              <p class="dock-label">Pick Tower</p>
+              <p class="dock-selection-summary" data-selection-summary></p>
+            </div>
+            <div class="tower-grid tower-grid--dock" id="tower-buttons-dock">
+              <button type="button" data-tower="attack" class="tower-choice">
+                <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span>Attack</span></span>
+              </button>
+              <button type="button" data-tower="slow" class="tower-choice">
+                <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span>Slow</span></span>
+              </button>
+              <button type="button" data-tower="magic" class="tower-choice">
+                <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span>Magic</span></span>
+              </button>
+              <button type="button" data-tower="cannon" class="tower-choice">
+                <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span>Cannon</span></span>
+              </button>
+              <button type="button" data-tower="hunter" class="tower-choice">
+                <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span>Hunter</span></span>
+              </button>
             </div>
           </div>
 
           <div class="dock-actions-layout">
             <div class="dock-pad" aria-label="Move cursor">
-              <button type="button" data-move="up">Up</button>
-              <button type="button" data-move="left">Left</button>
-              <button type="button" data-move="down">Down</button>
-              <button type="button" data-move="right">Right</button>
+              <button type="button" data-move="up" class="dock-pad__up">Up</button>
+              <button type="button" data-move="left" class="dock-pad__left">Left</button>
+              <button type="button" data-move="right" class="dock-pad__right">Right</button>
+              <button type="button" data-move="down" class="dock-pad__down">Down</button>
             </div>
 
             <div class="dock-actions">
@@ -93,14 +111,29 @@
       <aside class="sidebar">
         <section class="card card--towers">
           <h2>Towers</h2>
-          <div class="tower-buttons" id="tower-buttons">
-            <button type="button" data-tower="attack">1 Attack</button>
-            <button type="button" data-tower="slow">2 Slow</button>
-            <button type="button" data-tower="magic">3 Magic</button>
-            <button type="button" data-tower="cannon">4 Cannon</button>
-            <button type="button" data-tower="hunter">5 Hunter</button>
+          <p class="selection-summary selection-summary--desktop" data-selection-summary></p>
+          <div class="tower-grid" id="tower-buttons">
+            <button type="button" data-tower="attack" class="tower-choice">
+              <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span>Attack</span></span>
+            </button>
+            <button type="button" data-tower="slow" class="tower-choice">
+              <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span>Slow</span></span>
+            </button>
+            <button type="button" data-tower="magic" class="tower-choice">
+              <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span>Magic</span></span>
+            </button>
+            <button type="button" data-tower="cannon" class="tower-choice">
+              <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span>Cannon</span></span>
+            </button>
+            <button type="button" data-tower="hunter" class="tower-choice">
+              <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span>Hunter</span></span>
+            </button>
           </div>
-          <p id="selection-summary" class="selection-summary"></p>
         </section>
 
         <section class="card card--controls">
