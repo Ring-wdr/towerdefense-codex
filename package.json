@@ -13,5 +13,8 @@
   "devDependencies": {
     "playwright": "^1.59.1",
     "vite": "^7.1.12"
+  },
+  "dependencies": {
+    "lucide": "^1.8.0"
   }
 }

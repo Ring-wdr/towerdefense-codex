@@ -23,6 +23,7 @@ import {
   togglePause,
   upgradeTowerAtCursor,
 } from "./game/logic.js";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, createIcons } from "lucide";
 import attackTowerSpriteUrl from "./assets/towers/attack-v2.png";
 import bossEnemySpriteUrl from "./assets/enemies/boss.png";
 import cannonTowerSpriteUrl from "./assets/towers/cannon-v2.png";
@@ -89,6 +90,7 @@ const grassTileSprites = loadSpriteList([grassTile1Url, grassTile2Url]);
 const roadTileSprites = loadSpriteList([roadTile1Url, roadTile2Url]);
 
 hydrateTowerIcons();
+hydrateControlIcons();
 
 function render() {
   drawBoard();
@@ -232,6 +234,17 @@ function hydrateTowerIcons() {
     const towerType = image.dataset.towerIcon;
     image.src = towerSpriteUrls[towerType];
   }
+}
+
+function hydrateControlIcons() {
+  createIcons({
+    icons: {
+      ChevronDown,
+      ChevronLeft,
+      ChevronRight,
+      ChevronUp,
+    },
+  });
 }
 
 function getEnemySpriteSize(enemy, species = null) {

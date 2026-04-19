@@ -69,33 +69,45 @@
             <div class="tower-grid tower-grid--dock" id="tower-buttons-dock">
               <button type="button" data-tower="attack" class="tower-choice">
                 <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span>Attack</span></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span class="tower-choice__name">Attack</span></span>
               </button>
               <button type="button" data-tower="slow" class="tower-choice">
                 <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span>Slow</span></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span class="tower-choice__name">Slow</span></span>
               </button>
               <button type="button" data-tower="magic" class="tower-choice">
                 <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span>Magic</span></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span class="tower-choice__name">Magic</span></span>
               </button>
               <button type="button" data-tower="cannon" class="tower-choice">
                 <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span>Cannon</span></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span class="tower-choice__name">Cannon</span></span>
               </button>
               <button type="button" data-tower="hunter" class="tower-choice">
                 <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span>Hunter</span></span>
+                <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span class="tower-choice__name">Hunter</span></span>
               </button>
             </div>
           </div>
 
           <div class="dock-actions-layout">
             <div class="dock-pad" aria-label="Move cursor">
-              <button type="button" data-move="up" class="dock-pad__up">Up</button>
-              <button type="button" data-move="left" class="dock-pad__left">Left</button>
-              <button type="button" data-move="right" class="dock-pad__right">Right</button>
-              <button type="button" data-move="down" class="dock-pad__down">Down</button>
+              <button type="button" data-move="up" class="dock-pad__up" aria-label="Up">
+                <i data-lucide="chevron-up"></i>
+                <span class="sr-only">Up</span>
+              </button>
+              <button type="button" data-move="left" class="dock-pad__left" aria-label="Left">
+                <i data-lucide="chevron-left"></i>
+                <span class="sr-only">Left</span>
+              </button>
+              <button type="button" data-move="right" class="dock-pad__right" aria-label="Right">
+                <i data-lucide="chevron-right"></i>
+                <span class="sr-only">Right</span>
+              </button>
+              <button type="button" data-move="down" class="dock-pad__down" aria-label="Down">
+                <i data-lucide="chevron-down"></i>
+                <span class="sr-only">Down</span>
+              </button>
             </div>
 
             <div class="dock-actions">
@@ -115,23 +127,23 @@
           <div class="tower-grid" id="tower-buttons">
             <button type="button" data-tower="attack" class="tower-choice">
               <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
-              <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span>Attack</span></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span class="tower-choice__name">Attack</span></span>
             </button>
             <button type="button" data-tower="slow" class="tower-choice">
               <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
-              <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span>Slow</span></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span class="tower-choice__name">Slow</span></span>
             </button>
             <button type="button" data-tower="magic" class="tower-choice">
               <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
-              <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span>Magic</span></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span class="tower-choice__name">Magic</span></span>
             </button>
             <button type="button" data-tower="cannon" class="tower-choice">
               <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
-              <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span>Cannon</span></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span class="tower-choice__name">Cannon</span></span>
             </button>
             <button type="button" data-tower="hunter" class="tower-choice">
               <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
-              <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span>Hunter</span></span>
+              <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span class="tower-choice__name">Hunter</span></span>
             </button>
           </div>
         </section>
