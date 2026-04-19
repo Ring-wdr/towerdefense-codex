@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+.worktrees/
+worktrees/
+.superpowers/
+
+*.log
+vite-*.out.log
+vite-*.err.log
+vite.out.log
+vite.err.log
+
+*-check.png
+
