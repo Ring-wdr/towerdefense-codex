@@ -301,7 +301,6 @@ button:disabled {
 
 .overlay-actions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
   margin-top: 20px;
@@ -323,22 +322,6 @@ button:disabled {
   background: linear-gradient(180deg, oklch(0.75 0.13 73), oklch(0.61 0.11 66));
   color: oklch(0.2 0.02 70);
   border-color: oklch(0.58 0.08 65);
-}
-
-.overlay-status {
-  margin: 14px 0 0;
-  color: var(--ink-muted);
-  font-size: 0.92rem;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.overlay-status.is-error {
-  color: color-mix(in srgb, var(--danger) 86%, white 14%);
-}
-
-.overlay-status.is-success {
-  color: var(--success);
 }
 
 .sidebar {
