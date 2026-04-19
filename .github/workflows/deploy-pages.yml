@@ -54,12 +54,6 @@ jobs:
       - name: Build for GitHub Pages
         env:
           PAGES_BASE: ${{ github.event_name == 'workflow_dispatch' && github.event.repository.name || github.event.workflow_run.repository.name }}
-          VITE_GITHUB_APP_CLIENT_ID: ${{ vars.VITE_GITHUB_APP_CLIENT_ID }}
-          VITE_GITHUB_LEADERBOARD_ISSUE_NUMBER: ${{ vars.VITE_GITHUB_LEADERBOARD_ISSUE_NUMBER }}
-          VITE_GITHUB_REPO_OWNER: ${{ vars.VITE_GITHUB_REPO_OWNER }}
-          VITE_GITHUB_REPO_NAME: ${{ vars.VITE_GITHUB_REPO_NAME }}
-          VITE_GITHUB_REDIRECT_URI: ${{ vars.VITE_GITHUB_REDIRECT_URI }}
-          VITE_APP_BUILD: ${{ github.sha }}
         run: npm run build -- --base="/${PAGES_BASE}/"
 
       - name: Setup Pages
