@@ -7,6 +7,15 @@ import {
   getBuildLabel,
 } from "../src/github/score-comment.js";
 import {
+  buildGitHubAuthorizeUrl,
+  createPkcePair,
+  parseGitHubAuthResult,
+} from "../src/github/auth.js";
+import {
+  getGitHubScoreConfig,
+  validateGitHubScoreConfig,
+} from "../src/github/config.js";
+import {
   createSubmissionState,
   createScoreSubmissionKey,
   markSubmissionFailed,
@@ -84,4 +93,52 @@ test("submission state keeps retry available after failure", () => {
 
 test("build label falls back to package version", () => {
   assert.equal(getBuildLabel({ envBuild: "", packageVersion: "1.0.0" }), "1.0.0");
+});
+
+test("github score config reads Vite env and reports missing values", () => {
+  const config = getGitHubScoreConfig({
+    env: {
+      VITE_GITHUB_APP_CLIENT_ID: "",
+      VITE_GITHUB_LEADERBOARD_ISSUE_NUMBER: "12",
+      VITE_GITHUB_REPO_OWNER: "ring-wdr",
+      VITE_GITHUB_REPO_NAME: "towerdefense-codex",
+      VITE_GITHUB_REDIRECT_URI: "https://ring-wdr.github.io/towerdefense-codex/",
+    },
+  });
+
+  assert.deepEqual(validateGitHubScoreConfig(config), ["VITE_GITHUB_APP_CLIENT_ID"]);
+});
+
+test("authorize URL contains PKCE fields", async () => {
+  const pair = await createPkcePair();
+  const url = new URL(
+    buildGitHubAuthorizeUrl({
+      clientId: "client123",
+      redirectUri: "https://ring-wdr.github.io/towerdefense-codex/",
+      state: "state-1",
+      codeChallenge: pair.codeChallenge,
+    }),
+  );
+
+  assert.equal(url.origin, "https://github.com");
+  assert.equal(url.searchParams.get("client_id"), "client123");
+  assert.equal(url.searchParams.get("redirect_uri"), "https://ring-wdr.github.io/towerdefense-codex/");
+  assert.equal(url.searchParams.get("state"), "state-1");
+  assert.equal(url.searchParams.get("code_challenge_method"), "S256");
+});
+
+test("callback parser returns denied status and code status", () => {
+  assert.deepEqual(parseGitHubAuthResult(new URL("https://example.com/?error=access_denied")), {
+    code: "",
+    error: "access_denied",
+    state: "",
+    status: "error",
+  });
+
+  assert.deepEqual(parseGitHubAuthResult(new URL("https://example.com/?code=abc123&state=state-1")), {
+    code: "abc123",
+    error: "",
+    state: "state-1",
+    status: "code",
+  });
 });
