@@ -8,13 +8,16 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "assets:center": "node scripts/center-assets.js",
+    "assets:center:write": "node scripts/center-assets.js --write"
   },
   "devDependencies": {
     "playwright": "^1.59.1",
     "vite": "^7.1.12"
   },
   "dependencies": {
-    "lucide": "^1.8.0"
+    "lucide": "^1.8.0",
+    "sharp": "^0.34.5"
   }
 }

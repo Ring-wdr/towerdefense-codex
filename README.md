@@ -31,6 +31,8 @@ npm run dev
 - `npm run build`: 프로덕션 빌드 생성
 - `npm run preview`: 빌드 결과 미리보기
 - `npm test`: 게임 로직 테스트 실행
+- `npm run assets:center`: 타워/적 PNG 에셋의 알파 영역을 기준으로 중앙 정렬 드라이런
+- `npm run assets:center:write`: 중앙 정렬 결과를 실제 PNG 파일에 반영
 
 ## Deployment
 
