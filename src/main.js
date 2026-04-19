@@ -57,6 +57,7 @@ const scoreValue = document.getElementById("score-value");
 const livesValue = document.getElementById("lives-value");
 const statusValue = document.getElementById("status-value");
 const pauseButton = document.getElementById("pause-button");
+const hud = document.querySelector(".hud");
 const selectionSummaries = Array.from(document.querySelectorAll("[data-selection-summary]"));
 const towerButtons = Array.from(document.querySelectorAll("[data-tower]"));
 const touchButtons = Array.from(document.querySelectorAll("[data-move], [data-action]"));
@@ -542,13 +543,20 @@ function syncTowerActions(selectedTower) {
   }
 
   const boardBounds = canvas.getBoundingClientRect();
+  const frameBounds = canvas.parentElement.getBoundingClientRect();
   const scaleX = boardBounds.width / canvas.width;
   const scaleY = boardBounds.height / canvas.height;
-  const centerX = (selectedTower.x + 0.5) * CELL_SIZE * scaleX;
-  const topY = selectedTower.y * CELL_SIZE * scaleY;
+  const canvasOffsetX = boardBounds.left - frameBounds.left;
+  const canvasOffsetY = boardBounds.top - frameBounds.top;
+  const centerX = canvasOffsetX + (selectedTower.x + 0.5) * CELL_SIZE * scaleX;
+  const topY = canvasOffsetY + selectedTower.y * CELL_SIZE * scaleY;
+  const hudBottom = hud
+    ? hud.getBoundingClientRect().bottom - frameBounds.top
+    : 0;
+  const minimumTop = Math.max(44, hudBottom + 8);
 
   towerActions.style.left = `${centerX}px`;
-  towerActions.style.top = `${Math.max(44, topY - 10)}px`;
+  towerActions.style.top = `${Math.max(minimumTop, topY - 10)}px`;
   towerActions.hidden = false;
 }
 
