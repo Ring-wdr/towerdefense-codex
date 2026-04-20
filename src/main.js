@@ -1,5 +1,3 @@
-import { createGame } from "./phaser/game.js";
-import { createGameSession } from "./phaser/state/game-session.js";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
 import hunterTowerIconUrl from "./assets/towers/hunter-v2.png";
@@ -25,14 +23,17 @@ function hydrateTowerIcons() {
   }
 }
 
-const root = document.getElementById("game-root");
+async function startApplication() {
+  hydrateTowerIcons();
 
-if (!root) {
-  throw new Error("Missing #game-root mount for Phaser bootstrap.");
+  const { default: startGame } = await import("./game/main.js");
+  return startGame("game-root");
 }
 
-hydrateTowerIcons();
-
-const game = createGame(root);
-
-game.registry.set("session", createGameSession());
+document.addEventListener("DOMContentLoaded", () => {
+  void startApplication().catch((error) => {
+    setTimeout(() => {
+      throw error;
+    });
+  });
+});
