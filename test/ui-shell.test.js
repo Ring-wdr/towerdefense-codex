@@ -6,6 +6,7 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
+const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 test("ui shell exposes only the phaser mount and battle controls", () => {
@@ -67,6 +68,13 @@ test("battle restart clears live particle bursts before rendering the fresh run"
   assert.match(
     battleSceneSource,
     /restartBattle\(\)\s*\{[\s\S]*emitter\.killAll\(\);[\s\S]*this\.handledAttackEffectIds\.clear\(\);[\s\S]*this\.renderScene\(\);/,
+  );
+});
+
+test("paused overlay resumes battle when escape is pressed", () => {
+  assert.match(
+    overlaySceneSource,
+    /mode === "paused"[\s\S]*this\.input\.keyboard\.on\("keydown-ESC"[\s\S]*battle\.resumeBattle\(\)[\s\S]*this\.scene\.resume\("BattleScene"\)[\s\S]*this\.scene\.stop\(\)/,
   );
 });
 
