@@ -10,20 +10,145 @@ const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlaySce
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 function extractMethodBody(source, methodName) {
-  const signaturePattern = new RegExp(String.raw`(?:^|\n)\s*(?:async\s+)?(?:static\s+)?${methodName}\(\)\s*\{`);
+  const signaturePattern = new RegExp(
+    String.raw`(?:^|\n)\s*(?:async\s+)?(?:static\s+)?(?:get\s+|set\s+)?${methodName}\s*\(`,
+  );
   const signatureMatch = source.match(signaturePattern);
   if (!signatureMatch) {
     return null;
   }
 
-  const openBraceIndex = source.indexOf("{", signatureMatch.index);
+  let index = signatureMatch.index + signatureMatch[0].lastIndexOf("(");
+  let parenDepth = 0;
+  let state = "code";
+  let closeParenIndex = -1;
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (state === "code") {
+      if (char === "'") {
+        state = "single";
+      } else if (char === '"') {
+        state = "double";
+      } else if (char === "`") {
+        state = "template";
+      } else if (char === "/" && next === "/") {
+        state = "line-comment";
+        index += 1;
+      } else if (char === "/" && next === "*") {
+        state = "block-comment";
+        index += 1;
+      } else if (char === "(") {
+        parenDepth += 1;
+      } else if (char === ")") {
+        parenDepth -= 1;
+        if (parenDepth === 0) {
+          closeParenIndex = index;
+          break;
+        }
+      }
+    } else if (state === "single") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "'") {
+        state = "code";
+      }
+    } else if (state === "double") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === '"') {
+        state = "code";
+      }
+    } else if (state === "template") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "`") {
+        state = "code";
+      }
+    } else if (state === "line-comment") {
+      if (char === "\n") {
+        state = "code";
+      }
+    } else if (state === "block-comment") {
+      if (char === "*" && next === "/") {
+        state = "code";
+        index += 1;
+      }
+    }
+
+    index += 1;
+  }
+
+  if (closeParenIndex === -1) {
+    return null;
+  }
+
+  let openBraceIndex = -1;
+  index = closeParenIndex + 1;
+  state = "code";
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (state === "code") {
+      if (char === "{") {
+        openBraceIndex = index;
+        break;
+      } else if (char === "'") {
+        state = "single";
+      } else if (char === '"') {
+        state = "double";
+      } else if (char === "`") {
+        state = "template";
+      } else if (char === "/" && next === "/") {
+        state = "line-comment";
+        index += 1;
+      } else if (char === "/" && next === "*") {
+        state = "block-comment";
+        index += 1;
+      }
+    } else if (state === "single") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "'") {
+        state = "code";
+      }
+    } else if (state === "double") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === '"') {
+        state = "code";
+      }
+    } else if (state === "template") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "`") {
+        state = "code";
+      }
+    } else if (state === "line-comment") {
+      if (char === "\n") {
+        state = "code";
+      }
+    } else if (state === "block-comment") {
+      if (char === "*" && next === "/") {
+        state = "code";
+        index += 1;
+      }
+    }
+
+    index += 1;
+  }
+
   if (openBraceIndex === -1) {
     return null;
   }
 
   let depth = 0;
-  let index = openBraceIndex;
-  let state = "code";
+  index = openBraceIndex;
+  state = "code";
 
   while (index < source.length) {
     const char = source[index];
@@ -119,9 +244,9 @@ test("tower actions use readable labels and the battle scene is ready for contex
 
   const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
   assert.ok(syncTowerActionOverlayBody);
-  assert.match(syncTowerActionOverlayBody, /Upgrade/);
-  assert.match(syncTowerActionOverlayBody, /Delete/);
-  assert.match(syncTowerActionOverlayBody, /Max/);
+  assert.match(syncTowerActionOverlayBody, /upgradeAction[\s\S]{0,200}(textContent|innerText)\s*=\s*[^;\n]*Upgrade\s*\$\{[\s\S]*?\}G/);
+  assert.match(syncTowerActionOverlayBody, /upgradeAction[\s\S]{0,200}(textContent|innerText)\s*=\s*[^;\n]*Max/);
+  assert.match(syncTowerActionOverlayBody, /deleteAction[\s\S]{0,200}(textContent|innerText)\s*=\s*[^;\n]*Delete/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
