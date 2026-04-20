@@ -53,3 +53,18 @@ test("slow bursts stay contact-heavy and readable at smaller scales", () => {
   assert.ok(slowBursts.every((burst) => burst.quantity <= 16));
   assert.ok(slowBursts.every((burst) => burst.scale.start <= 0.24));
 });
+
+test("attack bursts are large and long-lived enough to read during live play", () => {
+  const [launchBurst, impactBurst] = buildAttackParticleBursts({
+    type: "attack",
+    from: { x: 120, y: 180 },
+    to: { x: 210, y: 180 },
+  }, (value) => value);
+
+  assert.ok(launchBurst.quantity >= 14);
+  assert.ok(launchBurst.lifespan >= 240);
+  assert.ok(launchBurst.scale.start >= 0.28);
+  assert.ok(impactBurst.quantity >= 10);
+  assert.ok(impactBurst.lifespan >= 200);
+  assert.ok(impactBurst.scale.start >= 0.2);
+});
