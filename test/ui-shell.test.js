@@ -210,6 +210,17 @@ function extractMethodBody(source, methodName) {
   return null;
 }
 
+function collectTextUpdateValues(source) {
+  const values = [];
+  const assignmentPattern = /(textContent|innerText)\s*=\s*([^;\n]+)/g;
+
+  for (const match of source.matchAll(assignmentPattern)) {
+    values.push(match[2].trim());
+  }
+
+  return values;
+}
+
 test("ui shell exposes only the phaser mount and battle controls", () => {
   assert.match(html, /id="game-root"/);
   assert.match(html, /id="battle-controls"/);
@@ -244,10 +255,10 @@ test("tower actions use readable labels and the battle scene is ready for contex
 
   const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
   assert.ok(syncTowerActionOverlayBody);
-  assert.match(syncTowerActionOverlayBody, /(textContent|innerText)\s*=/);
-  assert.match(syncTowerActionOverlayBody, /Upgrade/);
-  assert.match(syncTowerActionOverlayBody, /Delete/);
-  assert.match(syncTowerActionOverlayBody, /Max/);
+  const textUpdateValues = collectTextUpdateValues(syncTowerActionOverlayBody);
+  assert.match(textUpdateValues.join("\n"), /Delete/);
+  assert.match(textUpdateValues.join("\n"), /Max/);
+  assert.match(textUpdateValues.join("\n"), /Upgrade/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
