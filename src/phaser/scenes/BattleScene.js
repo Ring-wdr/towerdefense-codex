@@ -607,6 +607,7 @@ export class BattleScene extends Phaser.Scene {
     this.drawTowerBadges();
     this.syncEnemySprites();
     this.drawEnemyOverlays();
+    this.drawEffects();
     this.syncAttackParticles();
     this.updateHud();
     this.children.bringToTop(this.graphics);
@@ -812,6 +813,18 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  drawEffects() {
+    for (const effect of this.state.attackEffects) {
+      this.graphics.lineStyle(effect.type === "cannon" ? 3 : 2, this.getEffectColor(effect.type), 0.9);
+      this.graphics.lineBetween(
+        this.boardOffset.x + this.scaleLength(effect.from.x),
+        this.boardOffset.y + this.scaleLength(effect.from.y),
+        this.boardOffset.x + this.scaleLength(effect.to.x),
+        this.boardOffset.y + this.scaleLength(effect.to.y),
+      );
+    }
+  }
+
   syncAttackParticles() {
     const activeIds = new Set();
 
@@ -865,6 +878,22 @@ export class BattleScene extends Phaser.Scene {
         this.boardOffset.y + this.scaleLength(burst.y),
       );
       emitter.updateConfig({ x: 0, y: 0 });
+    }
+  }
+
+  getEffectColor(type) {
+    switch (type) {
+      case "slow":
+        return 0x7fe4ff;
+      case "magic":
+        return 0xbf8dff;
+      case "cannon":
+        return 0xffc36d;
+      case "hunter":
+        return 0xfff2a0;
+      case "attack":
+      default:
+        return 0xffffff;
     }
   }
 
