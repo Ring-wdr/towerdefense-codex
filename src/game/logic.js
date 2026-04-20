@@ -122,6 +122,7 @@ export function createInitialState(stage = 1) {
     enemies: [],
     gold: 140,
     lives: 15,
+    nextAttackEffectId: 1,
     nextEnemyId: 1,
     nextTowerId: 1,
     score: 0,
@@ -530,7 +531,7 @@ function runTowers(state) {
     }
 
     applyTowerAttack(state.enemies, tower, stats, targets);
-    state.attackEffects.push(...createAttackEffects(tower, stats, targets));
+    state.attackEffects.push(...createAttackEffects(state, tower, stats, targets));
     tower.cooldown = stats.cooldown;
   }
 }
@@ -582,56 +583,71 @@ function applyHit(enemy, stats, scale) {
   }
 }
 
-function createAttackEffects(tower, stats, targets) {
+function createAttackEffect(state, fields) {
+  return {
+    id: state.nextAttackEffectId++,
+    ...fields,
+  };
+}
+
+function createAttackEffects(state, tower, stats, targets) {
   const origin = getCellCenter(tower);
 
   if (tower.type === "cannon") {
     const target = targets[0];
     const point = getEnemyPosition(target);
     return [
-      {
+      createAttackEffect(state, {
         type: "cannon",
         from: origin,
         to: point,
         radius: stats.splashRadius * CELL_SIZE,
         ttl: 4,
-      },
+      }),
     ];
   }
 
   if (tower.type === "slow") {
-    return targets.map((target) => ({
-      type: "slow",
-      from: origin,
-      to: getEnemyPosition(target),
-      ttl: 4,
-    }));
+    return targets.map((target) =>
+      createAttackEffect(state, {
+        type: "slow",
+        from: origin,
+        to: getEnemyPosition(target),
+        ttl: 4,
+      }),
+    );
   }
 
   if (tower.type === "magic") {
-    return targets.map((target, index) => ({
-      type: "magic",
-      from: index === 0 ? origin : getEnemyPosition(targets[index - 1]),
-      to: getEnemyPosition(target),
-      ttl: 4,
-    }));
+    return targets.map((target, index) =>
+      createAttackEffect(state, {
+        type: "magic",
+        from: index === 0 ? origin : getEnemyPosition(targets[index - 1]),
+        to: getEnemyPosition(target),
+        ttl: 4,
+      }),
+    );
   }
 
   if (tower.type === "hunter") {
-    return targets.map((target) => ({
-      type: "hunter",
+    return targets.map((target) =>
+      createAttackEffect(state, {
+        type: "hunter",
+        from: origin,
+        to: getEnemyPosition(target),
+        ttl: 3,
+      }),
+    );
+  }
+
+  return targets.map((target) =>
+    createAttackEffect(state, {
+      type: "attack",
       from: origin,
       to: getEnemyPosition(target),
       ttl: 3,
-    }));
-  }
-
-  return targets.map((target) => ({
-    type: "attack",
-    from: origin,
-    to: getEnemyPosition(target),
-    ttl: 3,
-  }));
+    }),
+  );
 }
 
 function settleEnemies(state) {

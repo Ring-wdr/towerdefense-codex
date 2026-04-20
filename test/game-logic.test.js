@@ -190,6 +190,30 @@ test("cannon splash damages clustered enemies", () => {
   assert.ok(state.attackEffects.some((effect) => effect.type === "cannon"));
 });
 
+test("attack effects carry stable ids and the metadata battle particles need", () => {
+  let state = startGame(createInitialState());
+  state.towers = [createTower("cannon", 2, 2), createTower("magic", 4, 2)];
+  state.enemies = [
+    createEnemy({ id: 1, species: "shellback", progress: 1.2, health: 120 }),
+    createEnemy({ id: 2, species: "grunt", progress: 1.45, health: 120 }),
+    createEnemy({ id: 3, species: "grunt", progress: 1.7, health: 120 }),
+  ];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  const cannonEffect = state.attackEffects.find((effect) => effect.type === "cannon");
+  const magicEffects = state.attackEffects.filter((effect) => effect.type === "magic");
+  const effectIds = state.attackEffects.map((effect) => effect.id);
+
+  assert.ok(cannonEffect, "expected the cannon tower to emit an effect");
+  assert.deepEqual(Object.keys(cannonEffect).sort(), ["from", "id", "radius", "to", "ttl", "type"]);
+  assert.equal(new Set(effectIds).size, effectIds.length, "expected unique effect ids");
+  assert.ok(effectIds.every((id) => Number.isInteger(id) && id > 0));
+  assert.ok(magicEffects.every((effect) => effect.from && effect.to));
+  assert.equal(state.nextAttackEffectId, Math.max(...effectIds) + 1);
+});
+
 test("hunter prioritizes the fastest enemy in range", () => {
   let state = startGame(createInitialState());
   state.towers = [createTower("hunter", 2, 2)];
@@ -204,6 +228,21 @@ test("hunter prioritizes the fastest enemy in range", () => {
   assert.equal(state.enemies[0].health, 80);
   assert.ok(state.enemies[1].health < 80);
   assert.ok(state.attackEffects.some((effect) => effect.type === "hunter"));
+});
+
+test("expired attack effects are removed without reusing old ids", () => {
+  let state = startGame(createInitialState());
+  state.towers = [createTower("attack", 2, 2)];
+  state.enemies = [createEnemy({ id: 1, species: "grunt", progress: 1.2, health: 120 })];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+  const firstEffectId = state.attackEffects[0]?.id;
+
+  state = advance(state, 5);
+
+  assert.equal(state.attackEffects.length, 0);
+  assert.ok(state.nextAttackEffectId > firstEffectId);
 });
 
 test("enemies move along the path and can escape", () => {
