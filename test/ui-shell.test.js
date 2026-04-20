@@ -14,6 +14,7 @@ test("ui shell exposes only the phaser mount and battle controls", () => {
   assert.match(html, /id="pause-button"/);
   assert.match(html, /id="tower-buttons"/);
   assert.match(html, /id="tower-buttons-dock"/);
+  assert.match(html, /viewport-fit=cover/);
 
   assert.doesNotMatch(html, /id="title-screen"/);
   assert.doesNotMatch(html, /id="campaign-menu-screen"/);
@@ -24,11 +25,22 @@ test("ui shell exposes only the phaser mount and battle controls", () => {
 test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(mainSource, /DOMContentLoaded/);
   assert.match(mainSource, /import\("\.\/game\/main\.js"\)/);
+  assert.match(mainSource, /createIcons/);
+  assert.match(mainSource, /icons:\s*\{/);
+  assert.match(mainSource, /visualViewport/);
+  assert.match(mainSource, /--browser-safe-bottom/);
   assert.match(mainSource, /data-tower-icon/);
   assert.match(mainSource, /querySelectorAll\("\[data-tower-icon\]"\)/);
   assert.match(mainSource, /img\.src\s*=/);
   assert.match(gameMainSource, /createGameSession/);
   assert.match(gameMainSource, /createGame\(mountNode\)/);
+});
+
+test("quick play movement buttons render lucide arrow icons", () => {
+  assert.match(html, /data-move="up"[\s\S]*data-lucide="arrow-up"/);
+  assert.match(html, /data-move="left"[\s\S]*data-lucide="arrow-left"/);
+  assert.match(html, /data-move="right"[\s\S]*data-lucide="arrow-right"/);
+  assert.match(html, /data-move="down"[\s\S]*data-lucide="arrow-down"/);
 });
 
 test("battle scene keeps the hud compact and biases the field upward", () => {
@@ -62,10 +74,18 @@ test("battle control dock stays below the playfield and compact", () => {
   );
   assert.match(
     stylesSource,
-    /\.control-dock\s*\{[\s\S]*bottom:\s*10px;/,
+    /\.control-dock\s*\{[\s\S]*overflow:\s*hidden;/,
   );
   assert.match(
     stylesSource,
-    /\.control-dock\s*\{[\s\S]*max-height:\s*210px;/,
+    /\.control-dock\s*\{[\s\S]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom,\s*0px\) \+ var\(--browser-safe-bottom\)\);/,
+  );
+  assert.match(
+    stylesSource,
+    /\.control-dock\s*\{[\s\S]*padding-bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom,\s*0px\)\);/,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /\.control-dock\s*\{[\s\S]*overflow:\s*auto;/,
   );
 });

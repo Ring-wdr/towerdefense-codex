@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Tower Defense</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -79,10 +79,22 @@
 
           <div class="dock-actions-layout">
             <div class="dock-pad" aria-label="Move cursor">
-              <button type="button" data-move="up" class="dock-pad__up" aria-label="Up">Up</button>
-              <button type="button" data-move="left" class="dock-pad__left" aria-label="Left">Left</button>
-              <button type="button" data-move="right" class="dock-pad__right" aria-label="Right">Right</button>
-              <button type="button" data-move="down" class="dock-pad__down" aria-label="Down">Down</button>
+              <button type="button" data-move="up" class="dock-pad__up" aria-label="Up">
+                <i data-lucide="arrow-up" aria-hidden="true"></i>
+                <span class="sr-only">Up</span>
+              </button>
+              <button type="button" data-move="left" class="dock-pad__left" aria-label="Left">
+                <i data-lucide="arrow-left" aria-hidden="true"></i>
+                <span class="sr-only">Left</span>
+              </button>
+              <button type="button" data-move="right" class="dock-pad__right" aria-label="Right">
+                <i data-lucide="arrow-right" aria-hidden="true"></i>
+                <span class="sr-only">Right</span>
+              </button>
+              <button type="button" data-move="down" class="dock-pad__down" aria-label="Down">
+                <i data-lucide="arrow-down" aria-hidden="true"></i>
+                <span class="sr-only">Down</span>
+              </button>
             </div>
 
             <div class="dock-actions">

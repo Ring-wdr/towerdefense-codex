@@ -45,7 +45,7 @@ import {
   returnFromBattleToTheme,
   selectStage,
 } from "../state/game-session.js";
-import { getBattleViewportLayout } from "../ui/layout.js";
+import { getBattleViewportLayout, getBrowserSafeBottomInset } from "../ui/layout.js";
 
 const BOARD_WIDTH = GRID_COLS * CELL_SIZE;
 const BOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
@@ -321,6 +321,7 @@ export class BattleScene extends Phaser.Scene {
 
   handleResize() {
     const dockBottomPadding = this.getDockBottomPadding();
+    const safeBottomInset = getBrowserSafeBottomInset();
     const viewport = getBattleViewportLayout(this, BOARD_WIDTH, BOARD_HEIGHT, {
       topPadding: 92,
       bottomPadding: 24,
@@ -328,6 +329,7 @@ export class BattleScene extends Phaser.Scene {
       dockBottomPadding,
       compactDockBottomPadding: dockBottomPadding,
       maxScale: 1,
+      safeBottomInset,
     });
 
     this.boardOffset = {
@@ -342,7 +344,7 @@ export class BattleScene extends Phaser.Scene {
     this.hudText.setPosition(24, 20);
     this.hudText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
     this.hudText.setFontSize(this.scale.width <= 480 ? "14px" : "18px");
-    this.helpText.setPosition(24, this.scale.height - 116);
+    this.helpText.setPosition(24, this.scale.height - safeBottomInset - 116);
     this.helpText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
     this.helpText.setFontSize(this.scale.width <= 480 ? "13px" : "15px");
     this.statusText.setPosition(this.scale.width / 2, 36);

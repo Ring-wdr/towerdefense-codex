@@ -1,3 +1,8 @@
+function normalizeInset(value) {
+  const inset = Number(value);
+  return Number.isFinite(inset) ? Math.max(0, inset) : 0;
+}
+
 function getCommandRow(layout, count, preferredWidth = 180) {
   const baseGap = layout.isMobile ? 14 : 20;
   const gap = count > 1 ? Math.min(baseGap, Math.max(0, Math.floor(layout.contentWidth / (count - 1)))) : 0;
@@ -22,6 +27,7 @@ function getCommandRow(layout, count, preferredWidth = 180) {
 export function getBattleViewportLayout(scene, boardWidth, boardHeight, options = {}) {
   const width = scene.scale.width;
   const height = scene.scale.height;
+  const safeBottomInset = normalizeInset(options.safeBottomInset);
   const horizontalPadding = options.horizontalPadding ?? Math.max(12, Math.round(width * 0.06));
   const topPadding = options.topPadding ?? Math.max(72, Math.round(height * 0.13));
   const baseBottomPadding = options.bottomPadding ?? Math.max(20, Math.round(height * 0.04));
@@ -32,7 +38,8 @@ export function getBattleViewportLayout(scene, boardWidth, boardHeight, options 
   const dockBottomPadding = width <= compactDockBreakpoint
     ? (options.compactDockBottomPadding ?? options.dockBottomPadding ?? 232)
     : (options.dockBottomPadding ?? 220);
-  const bottomPadding = usesBottomDock ? Math.max(baseBottomPadding, dockBottomPadding) : baseBottomPadding;
+  const layoutBottomPadding = usesBottomDock ? Math.max(baseBottomPadding, dockBottomPadding) : baseBottomPadding;
+  const bottomPadding = layoutBottomPadding + safeBottomInset;
   const maxScale = options.maxScale ?? 1;
   const minScale = options.minScale ?? 0.35;
   const availableWidth = Math.max(0, width - horizontalPadding * 2);
@@ -58,17 +65,19 @@ export function getBattleViewportLayout(scene, boardWidth, boardHeight, options 
     horizontalPadding,
     topPadding,
     bottomPadding,
+    safeBottomInset,
     usesBottomDock,
   };
 }
 
-export function getSceneLayout(scene) {
+export function getSceneLayout(scene, options = {}) {
   const width = scene.scale.width;
   const height = scene.scale.height;
+  const safeBottomInset = normalizeInset(options.safeBottomInset);
   const desiredMargin = Math.max(18, Math.round(Math.min(width, height) * 0.04));
   const margin = Math.max(0, Math.min(desiredMargin, Math.floor(Math.min(width, height) / 2)));
   const contentWidth = Math.max(0, width - margin * 2);
-  const contentHeight = Math.max(0, height - margin * 2);
+  const contentHeight = Math.max(0, height - margin * 2 - safeBottomInset);
   const isMobile = width <= 680;
   const isShort = height <= 760;
   const desiredHeaderHeight = isMobile ? 116 : 132;
@@ -88,7 +97,8 @@ export function getSceneLayout(scene) {
 
   const focusTop = margin + headerHeight;
   const focusBottom = focusTop + focusHeight;
-  const commandTop = height - margin - commandHeight;
+  const commandBottom = height - margin - safeBottomInset;
+  const commandTop = commandBottom - commandHeight;
 
   return {
     width,
@@ -96,6 +106,7 @@ export function getSceneLayout(scene) {
     margin,
     contentWidth,
     contentHeight,
+    safeBottomInset,
     centerX: width / 2,
     centerY: height / 2,
     isMobile,
@@ -113,7 +124,7 @@ export function getSceneLayout(scene) {
     },
     command: {
       top: commandTop,
-      bottom: height - margin,
+      bottom: commandBottom,
       height: commandHeight,
       centerY: commandTop + commandHeight / 2,
     },
@@ -123,8 +134,17 @@ export function getSceneLayout(scene) {
   };
 }
 
-export function getViewportFrame(scene) {
-  const layout = getSceneLayout(scene);
+export function getBrowserSafeBottomInset() {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return 0;
+  }
+
+  const value = window.getComputedStyle(document.documentElement).getPropertyValue("--browser-safe-bottom").trim();
+  return normalizeInset(Number.parseFloat(value));
+}
+
+export function getViewportFrame(scene, options = {}) {
+  const layout = getSceneLayout(scene, options);
 
   return {
     ...layout,

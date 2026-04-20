@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { cycleThemeSelection, createGameSession, selectStage } from "../state/game-session.js";
 import { createBackdrop, createCommandButton, createStatusStrip, createTitleLockup } from "../ui/components.js";
-import { getSceneLayout } from "../ui/layout.js";
+import { getBrowserSafeBottomInset, getSceneLayout } from "../ui/layout.js";
 import { getThemeOrder } from "../../game/stages.js";
 import themeFundamentalsSigilUrl from "../../assets/phaser-ui/theme-fundamentals-sigil.png";
 import themeLateOperationsSigilUrl from "../../assets/phaser-ui/theme-late-operations-sigil.png";
@@ -57,7 +57,9 @@ export class CampaignScene extends Phaser.Scene {
   }
 
   renderScene() {
-    const layout = getSceneLayout(this);
+    const layout = getSceneLayout(this, {
+      safeBottomInset: getBrowserSafeBottomInset(),
+    });
     const session = getSession(this);
     createBackdrop(this, layout, { fillTop: 0x12211b, fillBottom: 0x0a120e, accent: 0x7a9b84 });
 

@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { cycleThemeSelection, createGameSession } from "../state/game-session.js";
 import { createBackdrop, createCommandButton, createTitleLockup } from "../ui/components.js";
-import { getSceneLayout } from "../ui/layout.js";
+import { getBrowserSafeBottomInset, getSceneLayout } from "../ui/layout.js";
 import titleCommandCrestUrl from "../../assets/phaser-ui/title-command-crest.png";
 
 const TITLE_COMMAND_CREST_KEY = "phaser-ui-title-command-crest";
@@ -36,7 +36,9 @@ export class TitleScene extends Phaser.Scene {
   }
 
   renderScene() {
-    const layout = getSceneLayout(this);
+    const layout = getSceneLayout(this, {
+      safeBottomInset: getBrowserSafeBottomInset(),
+    });
     const isCompactTitle = layout.height <= 360 || layout.focus.height < 180;
     createBackdrop(this, layout, { fillTop: 0x16231c, fillBottom: 0x08100c, accent: 0xd3a35d });
 

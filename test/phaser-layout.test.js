@@ -139,3 +139,25 @@ test("getBattleViewportLayout can reserve bottom dock space on wide viewports to
   assert.equal(layout.bottomPadding, 180);
   assert.ok(layout.boardBottom <= 900 - 180);
 });
+
+test("getSceneLayout reserves extra command safe area when the browser UI overlaps the bottom edge", () => {
+  const layout = layoutModule.getSceneLayout(createScene(390, 844), {
+    safeBottomInset: 48,
+  });
+
+  assert.equal(layout.safeBottomInset, 48);
+  assert.equal(layout.command.bottom, 844 - layout.margin - 48);
+});
+
+test("getBattleViewportLayout adds safe bottom inset on top of dock padding", () => {
+  const layout = layoutModule.getBattleViewportLayout(createScene(390, 844), 720, 480, {
+    topPadding: 92,
+    bottomPadding: 24,
+    forceBottomDock: true,
+    dockBottomPadding: 220,
+    safeBottomInset: 36,
+  });
+
+  assert.equal(layout.bottomPadding, 256);
+  assert.ok(layout.boardBottom <= 844 - 256);
+});

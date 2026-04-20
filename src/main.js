@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, createIcons } from "lucide";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
 import hunterTowerIconUrl from "./assets/towers/hunter-v2.png";
@@ -11,6 +12,7 @@ const TOWER_ICON_URLS = {
   cannon: cannonTowerIconUrl,
   hunter: hunterTowerIconUrl,
 };
+const BROWSER_SAFE_BOTTOM_VAR = "--browser-safe-bottom";
 
 function hydrateTowerIcons() {
   for (const img of document.querySelectorAll("[data-tower-icon]")) {
@@ -23,8 +25,42 @@ function hydrateTowerIcons() {
   }
 }
 
+function hydrateControlIcons() {
+  createIcons({
+    icons: {
+      ArrowUp,
+      ArrowLeft,
+      ArrowRight,
+      ArrowDown,
+    },
+  });
+}
+
+function syncBrowserSafeBottomInset() {
+  const viewport = window.visualViewport;
+  const safeBottomInset = viewport
+    ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
+    : 0;
+
+  document.documentElement.style.setProperty(BROWSER_SAFE_BOTTOM_VAR, `${safeBottomInset}px`);
+}
+
+function bindBrowserSafeBottomInset() {
+  syncBrowserSafeBottomInset();
+
+  const sync = () => {
+    syncBrowserSafeBottomInset();
+  };
+
+  window.visualViewport?.addEventListener("resize", sync);
+  window.visualViewport?.addEventListener("scroll", sync);
+  window.addEventListener("resize", sync);
+}
+
 async function startApplication() {
   hydrateTowerIcons();
+  hydrateControlIcons();
+  bindBrowserSafeBottomInset();
 
   const { default: startGame } = await import("./game/main.js");
   return startGame("game-root");

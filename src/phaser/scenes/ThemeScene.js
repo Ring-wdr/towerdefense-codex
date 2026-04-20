@@ -3,7 +3,7 @@ import { getStageDefinition, getThemeOrder, getThemeStageNumbers } from "../../g
 import { beginBattleFromSelection, createGameSession, returnToCampaign, selectStage } from "../state/game-session.js";
 import { isStageUnlocked } from "../../game/campaign-progress.js";
 import { createBackdrop, createCommandButton, createStatusStrip, createTitleLockup } from "../ui/components.js";
-import { getSceneLayout } from "../ui/layout.js";
+import { getBrowserSafeBottomInset, getSceneLayout } from "../ui/layout.js";
 import themeFundamentalsSigilUrl from "../../assets/phaser-ui/theme-fundamentals-sigil.png";
 import themeLateOperationsSigilUrl from "../../assets/phaser-ui/theme-late-operations-sigil.png";
 import themePressureSigilUrl from "../../assets/phaser-ui/theme-pressure-sigil.png";
@@ -63,7 +63,9 @@ export class ThemeScene extends Phaser.Scene {
   }
 
   renderScene() {
-    const layout = getSceneLayout(this);
+    const layout = getSceneLayout(this, {
+      safeBottomInset: getBrowserSafeBottomInset(),
+    });
     const session = getSession(this);
     const stage = getStageDefinition(session.selectedStage ?? 1);
     const themeStageNumbers = getThemeStageNumbers(stage.theme);
