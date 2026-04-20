@@ -63,6 +63,13 @@ test("battle scene measures the dock height before sizing tablet battle view", (
   assert.match(battleSceneSource, /Math\.max\(160,\s*Math\.ceil\(dockHeight\) \+ 20\)/);
 });
 
+test("battle restart clears live particle bursts before rendering the fresh run", () => {
+  assert.match(
+    battleSceneSource,
+    /restartBattle\(\)\s*\{[\s\S]*emitter\.killAll\(\);[\s\S]*this\.handledAttackEffectIds\.clear\(\);[\s\S]*this\.renderScene\(\);/,
+  );
+});
+
 test("battle sidebar stays disabled so it never covers the playfield", () => {
   assert.match(stylesSource, /\.sidebar\s*\{[\s\S]*display:\s*none\s*!important;/);
 });
