@@ -4,13 +4,13 @@ function normalizeInset(value) {
 }
 
 function getCommandRow(layout, count, preferredWidth = 180) {
-  const baseGap = layout.isMobile ? 14 : 20;
+  const baseGap = layout.isMobile ? 16 : 24;
   const gap = count > 1 ? Math.min(baseGap, Math.max(0, Math.floor(layout.contentWidth / (count - 1)))) : 0;
   const available = Math.max(0, layout.contentWidth - gap * (count - 1));
   const buttonWidth = Math.max(0, Math.min(preferredWidth, Math.floor(available / Math.max(1, count))));
   const rowWidth = buttonWidth * count + gap * (count - 1);
   const left = Math.max(0, (layout.width - rowWidth) / 2);
-  const buttonHeight = Math.max(0, Math.min(layout.isMobile ? 58 : 64, layout.command.height));
+  const buttonHeight = Math.max(0, Math.min(layout.isMobile ? 66 : 74, layout.command.height));
 
   return {
     gap,
@@ -80,9 +80,9 @@ export function getSceneLayout(scene, options = {}) {
   const contentHeight = Math.max(0, height - margin * 2 - safeBottomInset);
   const isMobile = width <= 680;
   const isShort = height <= 760;
-  const desiredHeaderHeight = isMobile ? 116 : 132;
-  const desiredCommandHeight = isShort ? 96 : isMobile ? 110 : 126;
-  const desiredFocusHeight = 180;
+  const desiredHeaderHeight = isMobile ? 130 : 150;
+  const desiredCommandHeight = isShort ? 112 : isMobile ? 126 : 146;
+  const desiredFocusHeight = 196;
   const availableBodyHeight = contentHeight;
   const desiredTotalHeight = desiredHeaderHeight + desiredFocusHeight + desiredCommandHeight;
   const scale = desiredTotalHeight > 0 ? Math.min(1, availableBodyHeight / desiredTotalHeight) : 0;

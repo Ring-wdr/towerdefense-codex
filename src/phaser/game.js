@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { CampaignScene } from "./scenes/CampaignScene.js";
 import { ThemeScene } from "./scenes/ThemeScene.js";

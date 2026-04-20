@@ -1,11 +1,17 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import {
   createGameSession,
   returnToCampaign,
   retryBattle,
   selectStage,
 } from "../state/game-session.js";
-import { createButton, createPanel } from "../ui/components.js";
+import {
+  createBodyTextStyle,
+  createButton,
+  createHeadingTextStyle,
+  createPanel,
+  PHASER_TEXT_FONTS,
+} from "../ui/components.js";
 import { getActionLayout, getViewportFrame } from "../ui/layout.js";
 
 function getSession(scene) {
@@ -30,23 +36,23 @@ export class OverlayScene extends Phaser.Scene {
 
     const copy = this.getOverlayCopy(mode, stage);
     this.add
-      .text(frame.centerX, frame.panelY + 72, copy.title, {
+      .text(frame.centerX, frame.panelY + 72, copy.title, createHeadingTextStyle({
         color: "#f5efe1",
-        fontFamily: "Trebuchet MS",
-        fontSize: `${frame.isMobile ? 30 : 38}px`,
+        fontFamily: PHASER_TEXT_FONTS.heading,
+        fontSize: `${frame.isMobile ? 34 : 44}px`,
         fontStyle: "bold",
-      })
+      }))
       .setOrigin(0.5, 0);
 
     this.add
-      .text(frame.centerX, frame.panelY + 136, copy.body, {
+      .text(frame.centerX, frame.panelY + 136, copy.body, createBodyTextStyle({
         color: "#d9d0bf",
-        fontFamily: "Segoe UI",
-        fontSize: `${frame.isMobile ? 16 : 19}px`,
+        fontFamily: PHASER_TEXT_FONTS.body,
+        fontSize: `${frame.isMobile ? 18 : 22}px`,
         align: "center",
         wordWrap: { width: frame.panelWidth - 72 },
-        lineSpacing: 6,
-      })
+        lineSpacing: 8,
+      }))
       .setOrigin(0.5, 0);
 
     const actions = getActionLayout(frame, copy.actions.length, frame.isMobile ? 100 : 150);
@@ -64,9 +70,9 @@ export class OverlayScene extends Phaser.Scene {
           action.run();
         },
         {
-          fontSize: frame.isMobile ? 17 : 20,
-          backgroundColor: index === 0 ? 0x946238 : 0x31414c,
-          textColor: index === 0 ? "#16110d" : "#f5efe1",
+          fontSize: frame.isMobile ? 20 : 24,
+          backgroundColor: index === 0 ? 0x8a5a2f : 0x31414c,
+          textColor: index === 0 ? "#fff0d6" : "#f5efe1",
         },
       );
     }

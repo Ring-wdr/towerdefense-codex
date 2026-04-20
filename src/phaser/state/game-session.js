@@ -111,6 +111,14 @@ export function returnToCampaign(session) {
   );
 }
 
+export function getCompletedBattleStage(session, battleState) {
+  if (battleState.status === "stage-cleared" && session.activeStage) {
+    return session.activeStage;
+  }
+
+  return battleState.stage;
+}
+
 export function completeBattleStage(session, stageNumber) {
   const progress = markStageCleared(session, stageNumber);
 

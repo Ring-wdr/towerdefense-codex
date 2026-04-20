@@ -1,9 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+const phaserSourceFiles = [
+  "src/phaser/game.js",
+  "src/phaser/scenes/TitleScene.js",
+  "src/phaser/scenes/CampaignScene.js",
+  "src/phaser/scenes/ThemeScene.js",
+  "src/phaser/scenes/BattleScene.js",
+  "src/phaser/scenes/OverlayScene.js",
+];
 
 test("main entry follows the official phaser vite template shape with a lazy game import", () => {
   assert.match(mainSource, /DOMContentLoaded/);
@@ -15,6 +24,23 @@ test("package scripts use dedicated vite dev and prod config files", () => {
   assert.equal(packageJson.scripts.dev, "vite --config vite/config.dev.mjs");
   assert.equal(packageJson.scripts.start, "vite --config vite/config.dev.mjs");
   assert.equal(packageJson.scripts.build, "vite build --config vite/config.prod.mjs");
+});
+
+test("package targets Phaser 4", () => {
+  assert.match(packageJson.dependencies.phaser, /^\^?4\./);
+});
+
+test("phaser source files use namespace imports for Phaser 4 ESM", () => {
+  for (const file of phaserSourceFiles) {
+    const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+
+    assert.doesNotMatch(
+      source,
+      /import\s+Phaser\s+from\s+["']phaser["']/,
+      join("src", file),
+    );
+    assert.match(source, /import\s+\*\s+as\s+Phaser\s+from\s+["']phaser["']/);
+  }
 });
 
 test("vite dev config mirrors the official template phaser chunk split", () => {
