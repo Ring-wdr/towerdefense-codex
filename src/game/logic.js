@@ -1,19 +1,18 @@
+import {
+  WAVES_PER_STAGE,
+  getStageCount,
+  getStagePathCells,
+  getStagePathLength,
+  getStagePointAlongPath,
+  getStageWaveDefinition,
+  isStageRoadCell,
+} from "./stages.js";
+
 export const GRID_COLS = 12;
 export const GRID_ROWS = 8;
 export const CELL_SIZE = 60;
 export const TICK_MS = 100;
 export const MAX_TOWER_LEVEL = 3;
-
-export const PATH_POINTS = [
-  { x: 0, y: 3 },
-  { x: 3, y: 3 },
-  { x: 3, y: 1 },
-  { x: 6, y: 1 },
-  { x: 6, y: 5 },
-  { x: 9, y: 5 },
-  { x: 9, y: 2 },
-  { x: 11, y: 2 },
-];
 
 export const TOWER_TYPES = {
   attack: {
@@ -116,10 +115,7 @@ export const ENEMY_SPECIES = {
   },
 };
 
-const PATH_SEGMENTS = buildPathSegments(PATH_POINTS);
-const ROAD_CELLS = expandPathToCells(PATH_POINTS);
-
-export function createInitialState() {
+export function createInitialState(stage = 1) {
   return {
     attackEffects: [],
     cursor: { x: 1, y: 1 },
@@ -131,6 +127,7 @@ export function createInitialState() {
     score: 0,
     selectedTowerType: "attack",
     spawnedInWave: 0,
+    stage,
     status: "menu",
     tick: 0,
     towers: [],
@@ -141,6 +138,16 @@ export function createInitialState() {
 
 export function startGame(state) {
   if (state.status !== "menu") {
+    return state;
+  }
+
+  const next = structuredClone(state);
+  next.status = "running";
+  return next;
+}
+
+export function continueCampaign(state) {
+  if (state.status !== "stage-cleared") {
     return state;
   }
 
@@ -183,8 +190,8 @@ export function togglePause(state) {
   return next;
 }
 
-export function restartGame() {
-  return createInitialState();
+export function restartGame(stage = 1) {
+  return createInitialState(stage);
 }
 
 export function selectTowerType(state, towerType) {
@@ -278,7 +285,7 @@ export function canBuildTower(state, x, y, towerType) {
     return false;
   }
 
-  if (isRoadCell(x, y)) {
+  if (isStageRoadCell(state.stage, x, y)) {
     return false;
   }
 
@@ -293,60 +300,20 @@ export function findTowerAt(state, x, y) {
   return state.towers.find((tower) => tower.x === x && tower.y === y) || null;
 }
 
-export function isRoadCell(x, y) {
-  return ROAD_CELLS.has(`${x},${y}`);
+export function isRoadCell(x, y, stage = 1) {
+  return isStageRoadCell(stage, x, y);
 }
 
 export function getUpgradeCost(tower) {
   return Math.round(TOWER_TYPES[tower.type].cost * (0.7 + tower.level * 0.25));
 }
 
-export function getWaveDefinition(wave) {
-  if (wave % 5 === 0) {
-    const tier = wave / 5;
-    return {
-      boss: true,
-      count: 1,
-      health: 280 + (tier - 1) * 120,
-      interval: 999,
-      reward: 80 + (tier - 1) * 20,
-      speed: 0.12 + (tier - 1) * 0.01,
-      spawnPlan: ["boss"],
-      speciesPool: ["boss"],
-    };
+export function getWaveDefinition(stageNumber, waveNumber = null) {
+  if (waveNumber == null) {
+    return getLegacyWaveDefinition(stageNumber);
   }
 
-  const presets = [
-    { count: 8, health: 34, reward: 10, speed: 0.16 },
-    { count: 10, health: 46, reward: 12, speed: 0.18 },
-    { count: 12, health: 60, reward: 14, speed: 0.2 },
-    { count: 14, health: 76, reward: 16, speed: 0.22 },
-  ];
-
-  let base;
-  if (wave <= presets.length) {
-    base = presets[wave - 1];
-  } else {
-    const postPresetWave = wave - presets.length - Math.floor((wave - 1) / 5);
-    base = {
-      count: 14 + postPresetWave * 2,
-      health: 76 + postPresetWave * 18,
-      reward: 16 + postPresetWave * 2,
-      speed: 0.22 + postPresetWave * 0.015,
-    };
-  }
-
-  const spawnPlan = buildNormalSpawnPlan(wave, base.count);
-  return {
-    boss: false,
-    count: base.count,
-    health: base.health,
-    interval: Math.max(5, 16 - Math.min(wave, 6) * 2),
-    reward: base.reward,
-    speed: base.speed,
-    spawnPlan,
-    speciesPool: Array.from(new Set(spawnPlan)),
-  };
+  return getStageWaveDefinition(stageNumber, waveNumber);
 }
 
 export function getTowerStats(tower) {
@@ -467,22 +434,19 @@ export function resolveDamageAgainstEnemy(enemy, attack, scale = 1) {
 }
 
 export function getEnemyPosition(enemy) {
-  return getPointAlongPath(enemy.progress);
+  return getStagePointAlongPath(enemy.stage ?? 1, enemy.progress);
 }
 
-export function getPathCells() {
-  return Array.from(ROAD_CELLS, (cell) => {
-    const [x, y] = cell.split(",").map(Number);
-    return { x, y };
-  });
+export function getPathCells(stageNumber = 1) {
+  return getStagePathCells(stageNumber);
 }
 
-export function getPathLength() {
-  return PATH_SEGMENTS.totalLength;
+export function getPathLength(stageNumber = 1) {
+  return getStagePathLength(stageNumber);
 }
 
 function maybeSpawnEnemy(state) {
-  const wave = getWaveDefinition(state.wave);
+  const wave = getWaveDefinition(state.stage, state.wave);
   if (state.spawnedInWave >= wave.count || state.tick < state.nextSpawnTick) {
     return;
   }
@@ -501,6 +465,7 @@ function createBossEnemy(state, wave) {
     id: state.nextEnemyId++,
     kind: "boss",
     species: "boss",
+    stage: state.stage,
     health: wave.health,
     maxHealth: wave.health,
     physicalResist: 0.1,
@@ -522,6 +487,7 @@ function createEnemyFromSpecies(state, wave, species) {
     id: state.nextEnemyId++,
     kind: "normal",
     species,
+    stage: state.stage,
     health,
     maxHealth: health,
     physicalResist: definition.physicalResist,
@@ -534,8 +500,8 @@ function createEnemyFromSpecies(state, wave, species) {
 }
 
 function moveEnemies(state) {
-  const pathLength = getPathLength();
   for (const enemy of state.enemies) {
+    const pathLength = getStagePathLength(enemy.stage ?? state.stage);
     const currentSlowFactor = enemy.slowTicks > 0 ? enemy.slowFactor : 1;
     enemy.progress += enemy.speed * currentSlowFactor;
     if (enemy.slowTicks > 0) {
@@ -686,23 +652,99 @@ function settleEnemies(state) {
 }
 
 function maybeAdvanceWave(state) {
-  const wave = getWaveDefinition(state.wave);
+  const wave = getWaveDefinition(state.stage, state.wave);
   if (state.spawnedInWave < wave.count || state.enemies.length > 0) {
     return;
   }
 
-  state.wave += 1;
-  state.spawnedInWave = 0;
-  state.nextSpawnTick = state.tick + 18;
   state.score += 50;
   state.gold += 20;
+
+  if (state.wave < WAVES_PER_STAGE) {
+    state.wave += 1;
+    state.spawnedInWave = 0;
+    state.nextSpawnTick = state.tick + 18;
+    return;
+  }
+
+  if (state.stage < getStageCount()) {
+    state.stage += 1;
+    state.wave = 1;
+    state.spawnedInWave = 0;
+    state.nextSpawnTick = state.tick + 18;
+    state.status = "stage-cleared";
+    return;
+  }
+
+  state.status = "victory";
 }
 
-function buildNormalSpawnPlan(wave, count) {
-  return Array.from({ length: count }, (_, index) => pickSpeciesForWave(wave, index, count));
+function getCellCenter(cell) {
+  return {
+    x: cell.x * CELL_SIZE + CELL_SIZE / 2,
+    y: cell.y * CELL_SIZE + CELL_SIZE / 2,
+  };
 }
 
-function pickSpeciesForWave(wave, index, count) {
+function distanceBetweenTowerAndEnemy(tower, enemy) {
+  const towerCenter = getCellCenter(tower);
+  const enemyPoint = getEnemyPosition(enemy);
+  return Math.hypot(enemyPoint.x - towerCenter.x, enemyPoint.y - towerCenter.y) / CELL_SIZE;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getLegacyWaveDefinition(wave) {
+  if (wave % 5 === 0) {
+    const tier = wave / 5;
+    return {
+      boss: true,
+      count: 1,
+      health: 280 + (tier - 1) * 120,
+      interval: 999,
+      reward: 80 + (tier - 1) * 20,
+      speed: 0.12 + (tier - 1) * 0.01,
+      spawnPlan: ["boss"],
+      speciesPool: ["boss"],
+    };
+  }
+
+  const presets = [
+    { count: 8, health: 34, reward: 10, speed: 0.16 },
+    { count: 10, health: 46, reward: 12, speed: 0.18 },
+    { count: 12, health: 60, reward: 14, speed: 0.2 },
+    { count: 14, health: 76, reward: 16, speed: 0.22 },
+  ];
+
+  let base;
+  if (wave <= presets.length) {
+    base = presets[wave - 1];
+  } else {
+    const postPresetWave = wave - presets.length - Math.floor((wave - 1) / 5);
+    base = {
+      count: 14 + postPresetWave * 2,
+      health: 76 + postPresetWave * 18,
+      reward: 16 + postPresetWave * 2,
+      speed: 0.22 + postPresetWave * 0.015,
+    };
+  }
+
+  const spawnPlan = Array.from({ length: base.count }, (_, index) => pickLegacySpeciesForWave(wave, index, base.count));
+  return {
+    boss: false,
+    count: base.count,
+    health: base.health,
+    interval: Math.max(5, 16 - Math.min(wave, 6) * 2),
+    reward: base.reward,
+    speed: base.speed,
+    spawnPlan,
+    speciesPool: Array.from(new Set(spawnPlan)),
+  };
+}
+
+function pickLegacySpeciesForWave(wave, index, count) {
   if (wave <= 2) {
     if ((wave === 1 && index === count - 1) || (wave === 2 && index % 5 === 4)) {
       return "runner";
@@ -748,76 +790,4 @@ function pickSpeciesForWave(wave, index, count) {
     return "shellback";
   }
   return "grunt";
-}
-
-function buildPathSegments(points) {
-  const segments = [];
-  let totalLength = 0;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = getCellCenter(points[index]);
-    const end = getCellCenter(points[index + 1]);
-    const length = Math.hypot(end.x - start.x, end.y - start.y) / CELL_SIZE;
-    segments.push({
-      start,
-      end,
-      startProgress: totalLength,
-      length,
-    });
-    totalLength += length;
-  }
-  return { segments, totalLength };
-}
-
-function getPointAlongPath(progress) {
-  if (progress <= 0) {
-    return getCellCenter(PATH_POINTS[0]);
-  }
-
-  for (const segment of PATH_SEGMENTS.segments) {
-    if (progress <= segment.startProgress + segment.length) {
-      const localProgress = (progress - segment.startProgress) / segment.length;
-      return {
-        x: segment.start.x + (segment.end.x - segment.start.x) * localProgress,
-        y: segment.start.y + (segment.end.y - segment.start.y) * localProgress,
-      };
-    }
-  }
-
-  return getCellCenter(PATH_POINTS[PATH_POINTS.length - 1]);
-}
-
-function expandPathToCells(points) {
-  const cells = new Set();
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    const stepX = Math.sign(end.x - start.x);
-    const stepY = Math.sign(end.y - start.y);
-    let x = start.x;
-    let y = start.y;
-    cells.add(`${x},${y}`);
-    while (x !== end.x || y !== end.y) {
-      x += stepX;
-      y += stepY;
-      cells.add(`${x},${y}`);
-    }
-  }
-  return cells;
-}
-
-function getCellCenter(cell) {
-  return {
-    x: cell.x * CELL_SIZE + CELL_SIZE / 2,
-    y: cell.y * CELL_SIZE + CELL_SIZE / 2,
-  };
-}
-
-function distanceBetweenTowerAndEnemy(tower, enemy) {
-  const towerCenter = getCellCenter(tower);
-  const enemyPoint = getEnemyPosition(enemy);
-  return Math.hypot(enemyPoint.x - towerCenter.x, enemyPoint.y - towerCenter.y) / CELL_SIZE;
-}
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
 }

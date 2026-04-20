@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildTowerAtCursor,
   canBuildTower,
+  continueCampaign,
   createInitialState,
   deleteTowerAtCursor,
   ENEMY_SPECIES,
@@ -79,6 +80,13 @@ test("game starts from main menu", () => {
 
   assert.equal(state.status, "menu");
   assert.equal(next.status, "running");
+});
+
+test("createInitialState accepts an explicit stage for phaser scene boot", () => {
+  const state = createInitialState(5);
+
+  assert.equal(state.stage, 5);
+  assert.equal(state.status, "menu");
 });
 
 test("cursor can be moved to an absolute tile position", () => {
@@ -235,6 +243,21 @@ test("restart resets state", () => {
   assert.equal(state.status, "menu");
 });
 
+test("restartGame can target an explicit stage before battle starts", () => {
+  const state = restartGame(4);
+
+  assert.equal(state.stage, 4);
+  assert.equal(state.status, "menu");
+  assert.equal(state.wave, 1);
+});
+
+test("startGame keeps the selected stage when entering battle", () => {
+  const started = startGame(restartGame(6));
+
+  assert.equal(started.stage, 6);
+  assert.equal(started.status, "running");
+});
+
 test("pause temporarily stops the game loop", () => {
   let state = startGame(createInitialState());
   state = advance(state, 15);
@@ -243,4 +266,53 @@ test("pause temporarily stops the game loop", () => {
 
   assert.equal(paused.status, "paused");
   assert.deepEqual(afterTick, paused);
+});
+
+test("road tiles follow the active stage path", () => {
+  const state = createInitialState();
+  state.stage = 2;
+
+  assert.equal(canBuildTower(state, 0, 4, "attack"), false);
+  assert.equal(canBuildTower(state, 1, 1, "attack"), true);
+});
+
+test("clearing the boss wave moves the campaign to the next stage gate", () => {
+  let state = startGame(createInitialState());
+  state.stage = 1;
+  state.wave = 5;
+  state.spawnedInWave = 1;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  assert.equal(state.status, "stage-cleared");
+  assert.equal(state.stage, 2);
+  assert.equal(state.wave, 1);
+  assert.equal(state.spawnedInWave, 0);
+});
+
+test("continueCampaign resumes the next stage after a stage clear", () => {
+  const state = createInitialState();
+  state.stage = 2;
+  state.status = "stage-cleared";
+
+  const next = continueCampaign(state);
+
+  assert.equal(next.status, "running");
+  assert.equal(next.stage, 2);
+});
+
+test("clearing the last stage ends the campaign in victory", () => {
+  let state = startGame(createInitialState());
+  state.stage = 9;
+  state.wave = 5;
+  state.spawnedInWave = 1;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  assert.equal(state.status, "victory");
+  assert.equal(state.stage, 9);
 });
