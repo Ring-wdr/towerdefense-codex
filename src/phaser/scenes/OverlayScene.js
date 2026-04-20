@@ -27,6 +27,9 @@ export class OverlayScene extends Phaser.Scene {
     const frame = getViewportFrame(this);
     const mode = data.mode ?? "paused";
     const stage = data.stage ?? getSession(this).selectedStage ?? 1;
+    const escHandler = () => {
+      this.resumePausedBattle();
+    };
 
     this.cameras.main.setBackgroundColor("rgba(6, 9, 8, 0.68)");
     createPanel(this, frame.panelX, frame.panelY + 24, frame.panelWidth, Math.min(frame.panelHeight - 48, frame.isMobile ? 318 : 336), {
@@ -75,6 +78,13 @@ export class OverlayScene extends Phaser.Scene {
           textColor: index === 0 ? "#fff0d6" : "#f5efe1",
         },
       );
+    }
+
+    if (mode === "paused" && this.input.keyboard) {
+      this.input.keyboard.on("keydown-ESC", escHandler);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.input.keyboard?.off("keydown-ESC", escHandler);
+      });
     }
   }
 
@@ -137,10 +147,7 @@ export class OverlayScene extends Phaser.Scene {
         {
           label: "Resume",
           run: () => {
-            const battle = this.scene.get("BattleScene");
-            battle.resumeBattle();
-            this.scene.resume("BattleScene");
-            this.scene.stop();
+            this.resumePausedBattle();
           },
         },
         {
@@ -163,5 +170,12 @@ export class OverlayScene extends Phaser.Scene {
         },
       ],
     };
+  }
+
+  resumePausedBattle() {
+    const battle = this.scene.get("BattleScene");
+    battle.resumeBattle();
+    this.scene.resume("BattleScene");
+    this.scene.stop();
   }
 }
