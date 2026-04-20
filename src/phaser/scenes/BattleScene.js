@@ -318,6 +318,9 @@ export class BattleScene extends Phaser.Scene {
   restartBattle() {
     this.state = startGame(restartGame(this.state.stage));
     this.lastTickAt = 0;
+    for (const emitter of this.attackParticleEmitters.values()) {
+      emitter.killAll();
+    }
     this.handledAttackEffectIds.clear();
     this.syncBattleControls();
     this.renderScene();
