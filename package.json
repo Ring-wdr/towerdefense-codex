@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite/config.dev.mjs",
-    "start": "vite --config vite/config.dev.mjs",
-    "build": "vite build --config vite/config.prod.mjs",
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "node --test",
     "assets:center": "node scripts/center-assets.js",

@@ -20,10 +20,11 @@ test("main entry follows the official phaser vite template shape with a lazy gam
   assert.doesNotMatch(mainSource, /from "\.\/phaser\/game\.js"/);
 });
 
-test("package scripts use dedicated vite dev and prod config files", () => {
-  assert.equal(packageJson.scripts.dev, "vite --config vite/config.dev.mjs");
-  assert.equal(packageJson.scripts.start, "vite --config vite/config.dev.mjs");
-  assert.equal(packageJson.scripts.build, "vite build --config vite/config.prod.mjs");
+test("package scripts match the latest Phaser Vite template defaults", () => {
+  assert.equal(packageJson.scripts.dev, "vite");
+  assert.equal(packageJson.scripts.start, "vite");
+  assert.equal(packageJson.scripts.build, "vite build");
+  assert.equal(packageJson.scripts.preview, "vite preview");
 });
 
 test("package targets Phaser 4", () => {
@@ -43,8 +44,8 @@ test("phaser source files use namespace imports for Phaser 4 ESM", () => {
   }
 });
 
-test("vite dev config mirrors the official template phaser chunk split", () => {
-  const viteConfigUrl = new URL("../vite/config.dev.mjs", import.meta.url);
+test("root vite config matches the latest Phaser template baseline", () => {
+  const viteConfigUrl = new URL("../vite.config.js", import.meta.url);
 
   assert.equal(existsSync(viteConfigUrl), true);
 
@@ -52,20 +53,6 @@ test("vite dev config mirrors the official template phaser chunk split", () => {
 
   assert.match(viteConfigSource, /defineConfig/);
   assert.match(viteConfigSource, /base:\s*["']\.\/["']/);
-  assert.match(viteConfigSource, /manualChunks:\s*\{/);
-  assert.match(viteConfigSource, /phaser:\s*\[\s*["']phaser["']\s*\]/);
-});
-
-test("vite prod config enables terser minification and the phaser chunk split", () => {
-  const viteConfigUrl = new URL("../vite/config.prod.mjs", import.meta.url);
-
-  assert.equal(existsSync(viteConfigUrl), true);
-
-  const viteConfigSource = readFileSync(viteConfigUrl, "utf8");
-
-  assert.match(viteConfigSource, /defineConfig/);
-  assert.match(viteConfigSource, /base:\s*["']\.\/["']/);
-  assert.match(viteConfigSource, /manualChunks/);
-  assert.match(viteConfigSource, /phaser:\s*\[\s*["']phaser["']\s*\]/);
-  assert.match(viteConfigSource, /minify:\s*["']terser["']/);
+  assert.doesNotMatch(viteConfigSource, /manualChunks/);
+  assert.doesNotMatch(viteConfigSource, /minify:\s*["']terser["']/);
 });
