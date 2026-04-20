@@ -31,21 +31,21 @@ jobs:
 
     steps:
       - name: Checkout workflow dispatch ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         if: github.event_name == 'workflow_dispatch'
         with:
           ref: ${{ github.ref }}
 
       - name: Checkout successful CI commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         if: github.event_name == 'workflow_run'
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
