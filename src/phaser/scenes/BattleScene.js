@@ -45,10 +45,16 @@ import {
   returnFromBattleToTheme,
   selectStage,
 } from "../state/game-session.js";
+import {
+  BATTLE_PARTICLE_TEXTURE_KEY,
+  buildAttackParticleBursts,
+  ensureBattleParticleTexture,
+} from "./battle-particles.js";
 import { getBattleViewportLayout, getBrowserSafeBottomInset } from "../ui/layout.js";
 
 const BOARD_WIDTH = GRID_COLS * CELL_SIZE;
 const BOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
+const ATTACK_PARTICLE_DEPTH = 5;
 const TOWER_KEYS = ["attack", "slow", "magic", "cannon", "hunter"];
 const TOWER_TEXTURE_KEYS = {
   attack: "tower-attack",
@@ -114,6 +120,8 @@ export class BattleScene extends Phaser.Scene {
     super("BattleScene");
     this.state = createInitialState();
     this.graphics = null;
+    this.attackParticleEmitters = new Map();
+    this.handledAttackEffectIds = new Set();
     this.hudText = null;
     this.helpText = null;
     this.statusText = null;
@@ -161,6 +169,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#142018");
     this.graphics = this.add.graphics();
+    this.createAttackParticles();
     this.hudText = this.add.text(0, 0, "", {
       color: "#f5efe1",
       fontFamily: "Trebuchet MS",
@@ -199,6 +208,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.off("pointerdown", this.handlePointerDown, this);
     this.input.keyboard?.off("keydown", this.handleKeyDown, this);
     this.unbindBattleControls();
+    this.destroyAttackParticles();
     this.destroyDisplayMap(this.towerSprites);
     this.destroyDisplayMap(this.enemySprites);
     for (const tile of this.tileImages) {
@@ -308,8 +318,39 @@ export class BattleScene extends Phaser.Scene {
   restartBattle() {
     this.state = startGame(restartGame(this.state.stage));
     this.lastTickAt = 0;
+    this.handledAttackEffectIds.clear();
     this.syncBattleControls();
     this.renderScene();
+  }
+
+  createAttackParticles() {
+    ensureBattleParticleTexture(this);
+    this.destroyAttackParticles();
+
+    for (const key of ["attack", "slow", "magic", "cannon", "hunter"]) {
+      const emitter = this.add.particles(0, 0, BATTLE_PARTICLE_TEXTURE_KEY, {
+        active: true,
+        blendMode: Phaser.BlendModes.ADD,
+        emitting: false,
+        frequency: -1,
+        lifespan: 180,
+        quantity: 1,
+        scale: { start: 0.18, end: 0 },
+        speed: { min: 0, max: 0 },
+      });
+      emitter.setDepth(ATTACK_PARTICLE_DEPTH);
+      this.attackParticleEmitters.set(key, emitter);
+    }
+
+    this.handledAttackEffectIds.clear();
+  }
+
+  destroyAttackParticles() {
+    for (const emitter of this.attackParticleEmitters.values()) {
+      emitter.destroy();
+    }
+    this.attackParticleEmitters.clear();
+    this.handledAttackEffectIds.clear();
   }
 
   returnToTheme() {
@@ -566,9 +607,12 @@ export class BattleScene extends Phaser.Scene {
     this.drawTowerBadges();
     this.syncEnemySprites();
     this.drawEnemyOverlays();
-    this.drawEffects();
+    this.syncAttackParticles();
     this.updateHud();
     this.children.bringToTop(this.graphics);
+    for (const emitter of this.attackParticleEmitters.values()) {
+      this.children.bringToTop(emitter);
+    }
     this.children.bringToTop(this.hudText);
     this.children.bringToTop(this.helpText);
     this.children.bringToTop(this.statusText);
@@ -768,41 +812,59 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  drawEffects() {
+  syncAttackParticles() {
+    const activeIds = new Set();
+
     for (const effect of this.state.attackEffects) {
-      const color = this.getEffectColor(effect.type);
+      activeIds.add(effect.id);
 
-      this.graphics.lineStyle(effect.type === "cannon" ? 3 : 2, color, 0.9);
-      this.graphics.lineBetween(
-        this.boardOffset.x + this.scaleLength(effect.from.x),
-        this.boardOffset.y + this.scaleLength(effect.from.y),
-        this.boardOffset.x + this.scaleLength(effect.to.x),
-        this.boardOffset.y + this.scaleLength(effect.to.y),
-      );
+      if (!this.handledAttackEffectIds.has(effect.id)) {
+        this.playAttackEffect(effect);
+        this.handledAttackEffectIds.add(effect.id);
+      }
+    }
 
-      if (effect.type === "cannon") {
-        this.graphics.strokeCircle(
-          this.boardOffset.x + this.scaleLength(effect.to.x),
-          this.boardOffset.y + this.scaleLength(effect.to.y),
-          this.scaleLength(effect.radius),
-        );
+    for (const effectId of this.handledAttackEffectIds) {
+      if (!activeIds.has(effectId)) {
+        this.handledAttackEffectIds.delete(effectId);
       }
     }
   }
 
-  getEffectColor(type) {
-    switch (type) {
-      case "slow":
-        return 0x7fe4ff;
-      case "magic":
-        return 0xbf8dff;
-      case "cannon":
-        return 0xffc36d;
-      case "hunter":
-        return 0xfff2a0;
-      case "attack":
-      default:
-        return 0xffffff;
+  playAttackEffect(effect) {
+    const bursts = buildAttackParticleBursts(effect, (value) => this.scaleLength(value));
+
+    for (const burst of bursts) {
+      const emitter = this.attackParticleEmitters.get(burst.emitterKey);
+      if (!emitter) {
+        continue;
+      }
+
+      const config = {
+        angle: burst.angle,
+        color: burst.tint,
+        lifespan: burst.lifespan,
+        quantity: burst.quantity,
+        scale: burst.scale,
+        speed: burst.speed,
+      };
+
+      if (burst.radial === true && burst.maxRadius) {
+        const scaledRadius = this.scaleLength(burst.maxRadius);
+        config.x = { min: -scaledRadius, max: scaledRadius };
+        config.y = { min: -scaledRadius, max: scaledRadius };
+      } else {
+        config.x = 0;
+        config.y = 0;
+      }
+
+      emitter.updateConfig(config);
+      emitter.explode(
+        burst.quantity,
+        this.boardOffset.x + this.scaleLength(burst.x),
+        this.boardOffset.y + this.scaleLength(burst.y),
+      );
+      emitter.updateConfig({ x: 0, y: 0 });
     }
   }
 
