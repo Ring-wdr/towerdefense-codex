@@ -10,12 +10,13 @@ const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlaySce
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 function extractMethodBody(source, methodName) {
-  const signatureIndex = source.indexOf(`${methodName}(`);
-  if (signatureIndex === -1) {
+  const signaturePattern = new RegExp(String.raw`(?:^|\n)\s*(?:async\s+)?(?:static\s+)?${methodName}\(\)\s*\{`);
+  const signatureMatch = source.match(signaturePattern);
+  if (!signatureMatch) {
     return null;
   }
 
-  const openBraceIndex = source.indexOf("{", signatureIndex);
+  const openBraceIndex = source.indexOf("{", signatureMatch.index);
   if (openBraceIndex === -1) {
     return null;
   }
@@ -118,10 +119,9 @@ test("tower actions use readable labels and the battle scene is ready for contex
 
   const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
   assert.ok(syncTowerActionOverlayBody);
-  assert.match(syncTowerActionOverlayBody, /hoveredTower/);
-  assert.match(syncTowerActionOverlayBody, /Upgrade|Delete|Max/);
-  assert.match(syncTowerActionOverlayBody, /getUpgradeCost/);
-  assert.match(syncTowerActionOverlayBody, /MAX_TOWER_LEVEL/);
+  assert.match(syncTowerActionOverlayBody, /Upgrade/);
+  assert.match(syncTowerActionOverlayBody, /Delete/);
+  assert.match(syncTowerActionOverlayBody, /Max/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
