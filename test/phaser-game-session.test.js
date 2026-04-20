@@ -6,6 +6,7 @@ import {
   completeBattleStage,
   createGameSession,
   cycleThemeSelection,
+  getCompletedBattleStage,
   returnToCampaign,
   returnFromBattleToTheme,
   retryBattle,
@@ -89,4 +90,16 @@ test("returnToCampaign restores the campaign scene without changing the selected
   assert.equal(session.activeStage, null);
   assert.equal(session.selectedTheme, completed.selectedTheme);
   assert.equal(session.selectedStage, 9);
+});
+
+test("getCompletedBattleStage prefers the active battle stage over the advanced state stage", () => {
+  const session = beginBattleFromSelection(selectStage(createGameSession(), 1));
+
+  assert.equal(
+    getCompletedBattleStage(session, {
+      status: "stage-cleared",
+      stage: 2,
+    }),
+    1,
+  );
 });

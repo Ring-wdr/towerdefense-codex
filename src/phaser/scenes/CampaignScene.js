@@ -1,6 +1,14 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { cycleThemeSelection, createGameSession, selectStage } from "../state/game-session.js";
-import { createBackdrop, createCommandButton, createStatusStrip, createTitleLockup } from "../ui/components.js";
+import {
+  createBackdrop,
+  createBodyTextStyle,
+  createCommandButton,
+  createHeadingTextStyle,
+  createStatusStrip,
+  createTitleLockup,
+  PHASER_TEXT_FONTS,
+} from "../ui/components.js";
 import { getBrowserSafeBottomInset, getSceneLayout } from "../ui/layout.js";
 import { getThemeOrder } from "../../game/stages.js";
 import themeFundamentalsSigilUrl from "../../assets/phaser-ui/theme-fundamentals-sigil.png";
@@ -71,19 +79,20 @@ export class CampaignScene extends Phaser.Scene {
       session.selectedTheme ?? "No Theme",
       {
         kickerColor: "#8fb095",
-        kickerSize: layout.isMobile ? 15 : 17,
-        titleSize: layout.isMobile ? 34 : 52,
+        kickerSize: layout.isMobile ? 17 : 20,
+        titleSize: layout.isMobile ? 40 : 60,
         wordWrapWidth: layout.contentWidth - (layout.isMobile ? 28 : 180),
       },
     );
 
     this.add
-      .text(layout.centerX, lockup.titleText.y + lockup.titleText.height + 16, `Stage ${session.selectedStage}`, {
+      .text(layout.centerX, lockup.titleText.y + lockup.titleText.height + 16, `Stage ${session.selectedStage}`, createHeadingTextStyle({
         color: "#e3b879",
-        fontFamily: "Trebuchet MS",
-        fontSize: `${layout.isMobile ? 18 : 22}px`,
+        fontFamily: PHASER_TEXT_FONTS.heading,
+        fontSize: `${layout.isMobile ? 21 : 26}px`,
         letterSpacing: 4,
-      })
+        strokeThickness: 4,
+      }))
       .setOrigin(0.5, 0);
 
     const isCompactLayout = layout.height <= 460 || layout.focus.height < 160;
@@ -95,12 +104,14 @@ export class CampaignScene extends Phaser.Scene {
           layout.focus.top + (layout.isMobile ? 68 : 82),
           `${session.selectedTheme ?? "No Theme"} / Stage ${session.selectedStage}.`,
           {
+            ...createBodyTextStyle({
             color: "#d8d1c4",
-            fontFamily: "Segoe UI",
-            fontSize: `${layout.isMobile ? 14 : 16}px`,
+            fontFamily: PHASER_TEXT_FONTS.body,
+            fontSize: `${layout.isMobile ? 16 : 19}px`,
             align: "center",
             wordWrap: { width: layout.contentWidth - (layout.isMobile ? 28 : 120) },
-            lineSpacing: 6,
+            lineSpacing: 7,
+            }),
           },
       )
       .setOrigin(0.5, 0);
@@ -117,12 +128,14 @@ export class CampaignScene extends Phaser.Scene {
           layout.focus.top + (layout.isMobile ? 176 : 208),
           "Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen.",
           {
+            ...createBodyTextStyle({
             color: "#d8d1c4",
-            fontFamily: "Segoe UI",
-            fontSize: `${layout.isMobile ? 16 : 20}px`,
+            fontFamily: PHASER_TEXT_FONTS.body,
+            fontSize: `${layout.isMobile ? 18 : 23}px`,
             align: "center",
             wordWrap: { width: layout.contentWidth - (layout.isMobile ? 34 : 210) },
-            lineSpacing: layout.isMobile ? 6 : 7,
+            lineSpacing: layout.isMobile ? 7 : 9,
+            }),
           },
         )
         .setOrigin(0.5, 0);
@@ -131,11 +144,11 @@ export class CampaignScene extends Phaser.Scene {
       const stripWidth = Math.min(layout.contentWidth / 2 - 12, layout.isMobile ? 148 : 220);
       createStatusStrip(this, layout.centerX - stripWidth / 2 - 8, stripY, stripWidth, "CLEARED", `${session.clearedStages.length} STAGES`, {
         labelColor: "#88a98d",
-        valueSize: layout.isMobile ? 20 : 24,
+        valueSize: layout.isMobile ? 22 : 28,
       });
       createStatusStrip(this, layout.centerX + stripWidth / 2 + 8, stripY, stripWidth, "SELECTION", `STAGE ${session.selectedStage}`, {
         labelColor: "#d9af74",
-        valueSize: layout.isMobile ? 20 : 24,
+        valueSize: layout.isMobile ? 22 : 28,
       });
     }
 
@@ -153,7 +166,7 @@ export class CampaignScene extends Phaser.Scene {
       this.scene.start("ThemeScene");
     }, {
       variant: "primary",
-      fontSize: layout.isMobile ? 18 : 22,
+      fontSize: layout.isMobile ? 21 : 25,
     });
 
     createCommandButton(this, commandRow.positions[2], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Next", () => {

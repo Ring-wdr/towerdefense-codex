@@ -1,3 +1,45 @@
+export const PHASER_TEXT_FONTS = {
+  heading: '"Black Ops One", "Arial Black", sans-serif',
+  body: '"Barlow Condensed", "Trebuchet MS", sans-serif',
+};
+
+export function createHeadingTextStyle(overrides = {}) {
+  return {
+    color: "#f5efe1",
+    fontFamily: PHASER_TEXT_FONTS.heading,
+    stroke: "#0a0d0b",
+    strokeThickness: 6,
+    shadow: {
+      offsetX: 0,
+      offsetY: 4,
+      color: "rgba(0, 0, 0, 0.45)",
+      blur: 8,
+      stroke: true,
+      fill: true,
+    },
+    ...overrides,
+  };
+}
+
+export function createBodyTextStyle(overrides = {}) {
+  return {
+    color: "#e6dfd2",
+    fontFamily: PHASER_TEXT_FONTS.body,
+    stroke: "#0d120f",
+    strokeThickness: 2,
+    lineSpacing: 4,
+    shadow: {
+      offsetX: 0,
+      offsetY: 2,
+      color: "rgba(0, 0, 0, 0.35)",
+      blur: 4,
+      stroke: false,
+      fill: true,
+    },
+    ...overrides,
+  };
+}
+
 function makeText(scene, x, y, value, style) {
   return scene.add.text(x, y, value, style).setOrigin(0.5);
 }
@@ -25,23 +67,24 @@ export function createBackdrop(scene, layout, options = {}) {
 
 export function createTitleLockup(scene, x, top, kicker, title, options = {}) {
   const kickerText = scene.add
-    .text(x, top, kicker, {
+    .text(x, top, kicker, createBodyTextStyle({
       color: options.kickerColor ?? "#d0aa6c",
-      fontFamily: options.kickerFontFamily ?? "Trebuchet MS",
-      fontSize: `${options.kickerSize ?? 18}px`,
+      fontFamily: options.kickerFontFamily ?? PHASER_TEXT_FONTS.body,
+      fontSize: `${options.kickerSize ?? 20}px`,
       letterSpacing: options.kickerLetterSpacing ?? 6,
-    })
+      fontStyle: "600",
+    }))
     .setOrigin(0.5, 0);
 
   const titleText = scene.add
-    .text(x, kickerText.y + kickerText.height + (options.gap ?? 10), title, {
+    .text(x, kickerText.y + kickerText.height + (options.gap ?? 10), title, createHeadingTextStyle({
       color: options.titleColor ?? "#f5efe1",
-      fontFamily: options.titleFontFamily ?? "Trebuchet MS",
-      fontSize: `${options.titleSize ?? 52}px`,
+      fontFamily: options.titleFontFamily ?? PHASER_TEXT_FONTS.heading,
+      fontSize: `${options.titleSize ?? 58}px`,
       fontStyle: options.titleStyle ?? "bold",
       align: "center",
       wordWrap: options.wordWrapWidth ? { width: options.wordWrapWidth } : undefined,
-    })
+    }))
     .setOrigin(0.5, 0);
 
   return { kickerText, titleText };
@@ -60,10 +103,12 @@ export function createCommandButton(scene, x, y, width, height, label, onPress, 
     .setStrokeStyle(2, isPrimary ? 0xf0d3a1 : 0x7f987d, 0.88);
   const labelText = makeText(scene, 0, 0, label, {
     color: isPrimary ? "#16110d" : "#f3efe7",
-    fontFamily: "Trebuchet MS",
-    fontSize: `${options.fontSize ?? 22}px`,
-    fontStyle: "bold",
+    fontFamily: PHASER_TEXT_FONTS.body,
+    fontSize: `${options.fontSize ?? 24}px`,
+    fontStyle: "700",
     align: "center",
+    stroke: isPrimary ? "#f4ddb2" : "#0b110d",
+    strokeThickness: isPrimary ? 0 : 2,
   });
 
   background.setInteractive({ useHandCursor: true });
@@ -83,20 +128,22 @@ export function createStatusStrip(scene, x, y, width, label, value, options = {}
   const container = scene.add.container(x, y);
   const background = scene.add.rectangle(0, 0, width, options.height ?? 72, 0x14201b, 0.74).setOrigin(0.5);
   const border = scene.add.rectangle(0, 0, width, options.height ?? 72).setOrigin(0.5).setStrokeStyle(1, 0x7c8e73, 0.4);
-  const labelText = scene.add.text(0, -14, label, {
+  const labelText = scene.add.text(0, -14, label, createBodyTextStyle({
     color: options.labelColor ?? "#9fb59f",
-    fontFamily: "Trebuchet MS",
-    fontSize: `${options.labelSize ?? 14}px`,
+    fontFamily: PHASER_TEXT_FONTS.body,
+    fontSize: `${options.labelSize ?? 16}px`,
     letterSpacing: 2,
-  }).setOrigin(0.5);
-  const valueText = scene.add.text(0, 12, value, {
+    fontStyle: "600",
+  })).setOrigin(0.5);
+  const valueText = scene.add.text(0, 12, value, createHeadingTextStyle({
     color: options.valueColor ?? "#f5efe1",
-    fontFamily: "Trebuchet MS",
-    fontSize: `${options.valueSize ?? 24}px`,
+    fontFamily: PHASER_TEXT_FONTS.heading,
+    fontSize: `${options.valueSize ?? 28}px`,
     fontStyle: "bold",
     align: "center",
     wordWrap: { width: width - 20 },
-  }).setOrigin(0.5);
+    strokeThickness: 4,
+  })).setOrigin(0.5);
 
   container.add([background, border, labelText, valueText]);
   return { container, background, border, labelText, valueText };
@@ -123,7 +170,7 @@ export function createPanel(scene, x, y, width, height, options = {}) {
 export function createButton(scene, x, y, width, height, label, onPress, options = {}) {
   const backgroundColor = options.backgroundColor ?? 0x31414c;
   const textColor = options.textColor ?? "#f5efe1";
-  const fontSize = options.fontSize ?? 24;
+  const fontSize = options.fontSize ?? 26;
   const strokeColor = options.strokeColor ?? 0xe4c47a;
 
   const container = scene.add.container(x, y);
@@ -131,13 +178,13 @@ export function createButton(scene, x, y, width, height, label, onPress, options
   const background = scene.add.rectangle(0, 0, width, height, backgroundColor, 0.95).setOrigin(0.5);
   const border = scene.add.rectangle(0, 0, width, height).setOrigin(0.5).setStrokeStyle(2, strokeColor, 0.9);
   const text = scene.add
-    .text(0, 0, label, {
+    .text(0, 0, label, createBodyTextStyle({
       color: textColor,
-      fontFamily: "Trebuchet MS",
+      fontFamily: PHASER_TEXT_FONTS.body,
       fontSize: `${fontSize}px`,
-      fontStyle: options.fontStyle ?? "bold",
+      fontStyle: options.fontStyle ?? "700",
       align: "center",
-    })
+    }))
     .setOrigin(0.5);
 
   background.setInteractive({ useHandCursor: true });

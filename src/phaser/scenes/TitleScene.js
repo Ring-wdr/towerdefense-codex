@@ -1,6 +1,12 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { cycleThemeSelection, createGameSession } from "../state/game-session.js";
-import { createBackdrop, createCommandButton, createTitleLockup } from "../ui/components.js";
+import {
+  createBackdrop,
+  createBodyTextStyle,
+  createCommandButton,
+  createTitleLockup,
+  PHASER_TEXT_FONTS,
+} from "../ui/components.js";
 import { getBrowserSafeBottomInset, getSceneLayout } from "../ui/layout.js";
 import titleCommandCrestUrl from "../../assets/phaser-ui/title-command-crest.png";
 
@@ -49,8 +55,8 @@ export class TitleScene extends Phaser.Scene {
       "CAMPAIGN FRONT",
       "Stage Command",
       {
-        kickerSize: layout.isMobile ? 16 : 18,
-        titleSize: layout.isMobile ? 40 : 62,
+        kickerSize: layout.isMobile ? 18 : 22,
+        titleSize: layout.isMobile ? 46 : 72,
         wordWrapWidth: layout.contentWidth - (layout.isMobile ? 40 : 120),
       },
     );
@@ -63,12 +69,14 @@ export class TitleScene extends Phaser.Scene {
           ? "Survey the route. Pick the theater."
           : "Survey the route. Pick the theater. Commit to battle only when the brief is clear.",
         {
+          ...createBodyTextStyle({
           color: "#d9d1c4",
-          fontFamily: "Segoe UI",
-          fontSize: `${isCompactTitle ? (layout.isMobile ? 14 : 18) : layout.isMobile ? 16 : 21}px`,
+          fontFamily: PHASER_TEXT_FONTS.body,
+          fontSize: `${isCompactTitle ? (layout.isMobile ? 16 : 20) : layout.isMobile ? 18 : 24}px`,
           align: "center",
           wordWrap: { width: layout.contentWidth - (layout.isMobile ? 28 : 180) },
-          lineSpacing: isCompactTitle ? 4 : 7,
+          lineSpacing: isCompactTitle ? 5 : 8,
+        }),
         },
       )
       .setOrigin(0.5, 0);
@@ -88,12 +96,14 @@ export class TitleScene extends Phaser.Scene {
     if (!isCompactTitle) {
       this.add
         .text(layout.centerX, layout.focus.bottom - (layout.isMobile ? 58 : 62), helperCopy, {
+          ...createBodyTextStyle({
           color: "#8fa18f",
-          fontFamily: "Trebuchet MS",
-          fontSize: `${layout.isMobile ? 12 : 15}px`,
+          fontFamily: PHASER_TEXT_FONTS.body,
+          fontSize: `${layout.isMobile ? 14 : 17}px`,
           letterSpacing: 1,
           align: "center",
           wordWrap: layout.isMobile ? { width: layout.contentWidth - 56 } : undefined,
+          }),
         })
         .setOrigin(0.5, 0.5);
     }
@@ -112,7 +122,7 @@ export class TitleScene extends Phaser.Scene {
       },
       {
         variant: "primary",
-        fontSize: layout.isMobile ? 22 : 26,
+        fontSize: layout.isMobile ? 24 : 30,
       },
     );
   }

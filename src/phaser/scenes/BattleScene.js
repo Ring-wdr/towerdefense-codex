@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import attackTowerSpriteUrl from "../../assets/towers/attack-v2.png";
 import bossEnemySpriteUrl from "../../assets/enemies/boss-v2.png";
 import cannonTowerSpriteUrl from "../../assets/towers/cannon-v2.png";
@@ -42,13 +42,21 @@ import {
   beginBattleFromSelection,
   completeBattleStage,
   createGameSession,
+  getCompletedBattleStage,
   returnFromBattleToTheme,
   selectStage,
 } from "../state/game-session.js";
+import {
+  BATTLE_PARTICLE_TEXTURE_KEY,
+  buildAttackParticleBursts,
+  ensureBattleParticleTexture,
+} from "./battle-particles.js";
+import { createBodyTextStyle, createHeadingTextStyle, PHASER_TEXT_FONTS } from "../ui/components.js";
 import { getBattleViewportLayout, getBrowserSafeBottomInset } from "../ui/layout.js";
 
 const BOARD_WIDTH = GRID_COLS * CELL_SIZE;
 const BOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
+const ATTACK_PARTICLE_DEPTH = 5;
 const TOWER_KEYS = ["attack", "slow", "magic", "cannon", "hunter"];
 const TOWER_TEXTURE_KEYS = {
   attack: "tower-attack",
@@ -88,6 +96,14 @@ const TILE_TEXTURE_URLS = {
   "tile-road-1": roadTile1Url,
   "tile-road-2": roadTile2Url,
 };
+const DEPTHS = {
+  tiles: 0,
+  towerBadges: 1,
+  towers: 2,
+  enemies: 3,
+  overlays: 10,
+  text: 11,
+};
 
 function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
@@ -114,6 +130,9 @@ export class BattleScene extends Phaser.Scene {
     super("BattleScene");
     this.state = createInitialState();
     this.graphics = null;
+    this.towerBadgeGraphics = null;
+    this.attackParticleEmitters = new Map();
+    this.handledAttackEffectIds = new Set();
     this.hudText = null;
     this.helpText = null;
     this.statusText = null;
@@ -160,28 +179,37 @@ export class BattleScene extends Phaser.Scene {
     this.game.registry.set("session", nextSession);
 
     this.cameras.main.setBackgroundColor("#142018");
+    this.towerBadgeGraphics = this.add.graphics();
     this.graphics = this.add.graphics();
-    this.hudText = this.add.text(0, 0, "", {
+    this.towerBadgeGraphics.setDepth(DEPTHS.towerBadges);
+    this.graphics.setDepth(DEPTHS.overlays);
+    this.createAttackParticles();
+    this.hudText = this.add.text(0, 0, "", createBodyTextStyle({
       color: "#f5efe1",
-      fontFamily: "Trebuchet MS",
-      fontSize: "18px",
-      lineSpacing: 6,
-    });
-    this.helpText = this.add.text(0, 0, "", {
+      fontFamily: PHASER_TEXT_FONTS.body,
+      fontSize: "20px",
+      lineSpacing: 7,
+      fontStyle: "600",
+    }));
+    this.helpText = this.add.text(0, 0, "", createBodyTextStyle({
       color: "#c9d5c0",
-      fontFamily: "Segoe UI",
-      fontSize: "15px",
-      lineSpacing: 5,
+      fontFamily: PHASER_TEXT_FONTS.body,
+      fontSize: "17px",
+      lineSpacing: 6,
       wordWrap: { width: 380 },
-    });
+    }));
     this.helpText.setVisible(false);
-    this.statusText = this.add.text(0, 0, "", {
+    this.statusText = this.add.text(0, 0, "", createHeadingTextStyle({
       color: "#f5efe1",
-      fontFamily: "Trebuchet MS",
-      fontSize: "28px",
+      fontFamily: PHASER_TEXT_FONTS.heading,
+      fontSize: "34px",
       fontStyle: "bold",
       align: "center",
-    });
+      strokeThickness: 5,
+    }));
+    this.hudText.setDepth(DEPTHS.text);
+    this.helpText.setDepth(DEPTHS.text);
+    this.statusText.setDepth(DEPTHS.text);
 
     this.scale.on("resize", this.handleResize, this);
     this.input.on("pointerdown", this.handlePointerDown, this);
@@ -199,8 +227,11 @@ export class BattleScene extends Phaser.Scene {
     this.input.off("pointerdown", this.handlePointerDown, this);
     this.input.keyboard?.off("keydown", this.handleKeyDown, this);
     this.unbindBattleControls();
+    this.destroyAttackParticles();
     this.destroyDisplayMap(this.towerSprites);
     this.destroyDisplayMap(this.enemySprites);
+    this.towerBadgeGraphics?.destroy();
+    this.towerBadgeGraphics = null;
     for (const tile of this.tileImages) {
       tile.destroy();
     }
@@ -308,8 +339,39 @@ export class BattleScene extends Phaser.Scene {
   restartBattle() {
     this.state = startGame(restartGame(this.state.stage));
     this.lastTickAt = 0;
+    this.handledAttackEffectIds.clear();
     this.syncBattleControls();
     this.renderScene();
+  }
+
+  createAttackParticles() {
+    ensureBattleParticleTexture(this);
+    this.destroyAttackParticles();
+
+    for (const key of ["attack", "slow", "magic", "cannon", "hunter"]) {
+      const emitter = this.add.particles(0, 0, BATTLE_PARTICLE_TEXTURE_KEY, {
+        active: true,
+        blendMode: Phaser.BlendModes.ADD,
+        emitting: false,
+        frequency: -1,
+        lifespan: 180,
+        quantity: 1,
+        scale: { start: 0.18, end: 0 },
+        speed: { min: 0, max: 0 },
+      });
+      emitter.setDepth(ATTACK_PARTICLE_DEPTH);
+      this.attackParticleEmitters.set(key, emitter);
+    }
+
+    this.handledAttackEffectIds.clear();
+  }
+
+  destroyAttackParticles() {
+    for (const emitter of this.attackParticleEmitters.values()) {
+      emitter.destroy();
+    }
+    this.attackParticleEmitters.clear();
+    this.handledAttackEffectIds.clear();
   }
 
   returnToTheme() {
@@ -343,13 +405,13 @@ export class BattleScene extends Phaser.Scene {
 
     this.hudText.setPosition(24, 20);
     this.hudText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
-    this.hudText.setFontSize(this.scale.width <= 480 ? "14px" : "18px");
+    this.hudText.setFontSize(this.scale.width <= 480 ? "16px" : "20px");
     this.helpText.setPosition(24, this.scale.height - safeBottomInset - 116);
     this.helpText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
-    this.helpText.setFontSize(this.scale.width <= 480 ? "13px" : "15px");
+    this.helpText.setFontSize(this.scale.width <= 480 ? "15px" : "17px");
     this.statusText.setPosition(this.scale.width / 2, 36);
     this.statusText.setOrigin(0.5, 0);
-    this.statusText.setFontSize(this.scale.width <= 480 ? "22px" : "28px");
+    this.statusText.setFontSize(this.scale.width <= 480 ? "26px" : "34px");
   }
 
   getDockBottomPadding() {
@@ -468,7 +530,9 @@ export class BattleScene extends Phaser.Scene {
     }
 
     if (this.state.status === "stage-cleared" || this.state.status === "victory") {
-      const nextSession = completeBattleStage(getSession(this), this.state.stage);
+      const session = getSession(this);
+      const completedStage = getCompletedBattleStage(session, this.state);
+      const nextSession = completeBattleStage(session, completedStage);
       this.game.registry.set("session", nextSession);
       this.setBattleControlsVisible(false);
 
@@ -557,21 +621,19 @@ export class BattleScene extends Phaser.Scene {
   }
 
   renderScene() {
+    this.towerBadgeGraphics.clear();
     this.graphics.clear();
     this.drawBoard();
     this.syncBoardTiles();
     this.drawGrid();
     this.drawCursor();
-    this.syncTowerSprites();
     this.drawTowerBadges();
+    this.syncTowerSprites();
     this.syncEnemySprites();
     this.drawEnemyOverlays();
     this.drawEffects();
+    this.syncAttackParticles();
     this.updateHud();
-    this.children.bringToTop(this.graphics);
-    this.children.bringToTop(this.hudText);
-    this.children.bringToTop(this.helpText);
-    this.children.bringToTop(this.statusText);
   }
 
   drawBoard() {
@@ -600,6 +662,7 @@ export class BattleScene extends Phaser.Scene {
           const texturePool = isRoad ? ROAD_TILE_TEXTURE_KEYS : GRASS_TILE_TEXTURE_KEYS;
           const textureKey = texturePool[Math.abs((x * 31 + y * 17) % texturePool.length)];
           const tile = this.add.image(0, 0, textureKey).setOrigin(0, 0);
+          tile.setDepth(DEPTHS.tiles);
           this.tileImages.push(tile);
         }
       }
@@ -672,6 +735,7 @@ export class BattleScene extends Phaser.Scene {
       let sprite = this.towerSprites.get(tower.id);
       if (!sprite) {
         sprite = this.add.image(0, 0, textureKey);
+        sprite.setDepth(DEPTHS.towers);
         this.towerSprites.set(tower.id, sprite);
       }
 
@@ -687,17 +751,25 @@ export class BattleScene extends Phaser.Scene {
     for (const tower of this.state.towers) {
       const x = this.boardOffset.x + tower.x * this.scaledCellSize + this.scaledCellSize / 2;
       const y = this.boardOffset.y + tower.y * this.scaledCellSize + this.scaledCellSize / 2;
-      const radius = this.scaleLength(12 + tower.level * 4);
+      const baseY = y + this.scaleLength(12);
+      const radius = this.scaleLength(15 + tower.level * 3);
 
-      this.graphics.lineStyle(2, 0xf5efe1, 1);
-      this.graphics.strokeCircle(x, y, radius / 1.8);
+      this.towerBadgeGraphics.lineStyle(2, 0xf5efe1, 0.72);
+      this.towerBadgeGraphics.strokeEllipse(x, baseY, radius * 2.2, radius * 0.95);
+      this.towerBadgeGraphics.lineStyle(1, 0x8b7452, 0.4);
+      this.towerBadgeGraphics.strokeEllipse(
+        x,
+        baseY + this.scaleLength(1),
+        radius * 1.75,
+        radius * 0.62,
+      );
 
       this.graphics.lineStyle(0);
       for (let index = 0; index < tower.level; index += 1) {
         this.graphics.fillStyle(0xf5efe1, 1);
         this.graphics.fillCircle(
           x - this.scaleLength(10) + index * this.scaleLength(10),
-          y + radius + this.scaleLength(8),
+          baseY + this.scaleLength(10),
           Math.max(2, this.scaleLength(3)),
         );
       }
@@ -723,6 +795,7 @@ export class BattleScene extends Phaser.Scene {
       let sprite = this.enemySprites.get(enemy.id);
       if (!sprite) {
         sprite = this.add.image(0, 0, textureKey);
+        sprite.setDepth(DEPTHS.enemies);
         this.enemySprites.set(enemy.id, sprite);
       }
 
@@ -770,23 +843,69 @@ export class BattleScene extends Phaser.Scene {
 
   drawEffects() {
     for (const effect of this.state.attackEffects) {
-      const color = this.getEffectColor(effect.type);
-
-      this.graphics.lineStyle(effect.type === "cannon" ? 3 : 2, color, 0.9);
+      this.graphics.lineStyle(effect.type === "cannon" ? 3 : 2, this.getEffectColor(effect.type), 0.9);
       this.graphics.lineBetween(
         this.boardOffset.x + this.scaleLength(effect.from.x),
         this.boardOffset.y + this.scaleLength(effect.from.y),
         this.boardOffset.x + this.scaleLength(effect.to.x),
         this.boardOffset.y + this.scaleLength(effect.to.y),
       );
+    }
+  }
 
-      if (effect.type === "cannon") {
-        this.graphics.strokeCircle(
-          this.boardOffset.x + this.scaleLength(effect.to.x),
-          this.boardOffset.y + this.scaleLength(effect.to.y),
-          this.scaleLength(effect.radius),
-        );
+  syncAttackParticles() {
+    const activeIds = new Set();
+
+    for (const effect of this.state.attackEffects) {
+      activeIds.add(effect.id);
+
+      if (!this.handledAttackEffectIds.has(effect.id)) {
+        this.playAttackEffect(effect);
+        this.handledAttackEffectIds.add(effect.id);
       }
+    }
+
+    for (const effectId of this.handledAttackEffectIds) {
+      if (!activeIds.has(effectId)) {
+        this.handledAttackEffectIds.delete(effectId);
+      }
+    }
+  }
+
+  playAttackEffect(effect) {
+    const bursts = buildAttackParticleBursts(effect, (value) => this.scaleLength(value));
+
+    for (const burst of bursts) {
+      const emitter = this.attackParticleEmitters.get(burst.emitterKey);
+      if (!emitter) {
+        continue;
+      }
+
+      const config = {
+        angle: burst.angle,
+        color: burst.tint,
+        lifespan: burst.lifespan,
+        quantity: burst.quantity,
+        scale: burst.scale,
+        speed: burst.speed,
+      };
+
+      if (burst.radial === true && burst.maxRadius) {
+        const scaledRadius = this.scaleLength(burst.maxRadius);
+        config.x = { min: -scaledRadius, max: scaledRadius };
+        config.y = { min: -scaledRadius, max: scaledRadius };
+      } else {
+        config.x = 0;
+        config.y = 0;
+      }
+
+      emitter.updateConfig(config);
+      emitter.explode(
+        burst.quantity,
+        this.boardOffset.x + this.scaleLength(burst.x),
+        this.boardOffset.y + this.scaleLength(burst.y),
+      );
+      emitter.updateConfig({ x: 0, y: 0 });
     }
   }
 
