@@ -336,6 +336,65 @@ export class BattleScene extends Phaser.Scene {
     this.renderScene();
   }
 
+  hideTowerActionOverlay() {
+    if (!this.controls?.towerActions) {
+      return;
+    }
+
+    this.controls.towerActions.hidden = true;
+    this.controls.towerActions.style.left = "";
+    this.controls.towerActions.style.top = "";
+
+    if (this.controls.upgradeAction) {
+      this.controls.upgradeAction.textContent = "Upgrade";
+      this.controls.upgradeAction.disabled = false;
+    }
+
+    if (this.controls.deleteAction) {
+      this.controls.deleteAction.textContent = "Delete";
+      this.controls.deleteAction.disabled = false;
+    }
+  }
+
+  syncTowerActionOverlay() {
+    if (!this.controls?.towerActions || !this.controls.upgradeAction || !this.controls.deleteAction) {
+      return;
+    }
+
+    const battleActive = this.state.status === "running";
+    const hoveredTower = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
+
+    if (!battleActive || !hoveredTower) {
+      this.hideTowerActionOverlay();
+      return;
+    }
+
+    const upgradeCost = getUpgradeCost(hoveredTower);
+    const isMaxLevel = hoveredTower.level >= MAX_TOWER_LEVEL;
+    const canAffordUpgrade = this.state.gold >= upgradeCost;
+    const towerCenterX = this.boardOffset.x + hoveredTower.x * this.scaledCellSize + this.scaledCellSize / 2;
+    const towerTopY = this.boardOffset.y + hoveredTower.y * this.scaledCellSize;
+    const actionGap = this.scaleLength(14);
+    const towerActions = this.controls.towerActions;
+
+    this.controls.upgradeAction.textContent = isMaxLevel ? "Max" : `Upgrade ${upgradeCost}G`;
+    this.controls.upgradeAction.disabled = isMaxLevel || !canAffordUpgrade;
+    this.controls.deleteAction.textContent = "Delete";
+    this.controls.deleteAction.disabled = false;
+
+    towerActions.hidden = false;
+    towerActions.style.left = `${towerCenterX}px`;
+    towerActions.style.top = `${Math.max(24, towerTopY - actionGap)}px`;
+
+    const bounds = towerActions.getBoundingClientRect();
+    const halfWidth = bounds.width / 2;
+    const clampedLeft = Phaser.Math.Clamp(towerCenterX, halfWidth + 12, this.scale.width - halfWidth - 12);
+    const clampedTop = Math.max(bounds.height + 12, towerTopY - actionGap);
+
+    towerActions.style.left = `${clampedLeft}px`;
+    towerActions.style.top = `${clampedTop}px`;
+  }
+
   restartBattle() {
     this.state = startGame(restartGame(this.state.stage));
     this.lastTickAt = 0;
@@ -415,6 +474,7 @@ export class BattleScene extends Phaser.Scene {
     this.statusText.setPosition(this.scale.width / 2, 36);
     this.statusText.setOrigin(0.5, 0);
     this.statusText.setFontSize(this.scale.width <= 480 ? "26px" : "34px");
+    this.syncTowerActionOverlay();
   }
 
   getDockBottomPadding() {
@@ -587,9 +647,7 @@ export class BattleScene extends Phaser.Scene {
       this.controls.pauseButton.textContent = this.state.status === "paused" ? "Resume" : "Pause";
     }
 
-    if (this.controls.towerActions) {
-      this.controls.towerActions.hidden = !battleActive || !hoveredTower;
-    }
+    this.syncTowerActionOverlay();
   }
 
   setBattleControlsVisible(isVisible) {
@@ -604,9 +662,13 @@ export class BattleScene extends Phaser.Scene {
     if (this.controls.dock) {
       this.controls.dock.hidden = !isVisible;
     }
-    if (this.controls.towerActions) {
-      this.controls.towerActions.hidden = !isVisible || !findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
+
+    if (!isVisible) {
+      this.hideTowerActionOverlay();
+      return;
     }
+
+    this.syncTowerActionOverlay();
   }
 
   pointerToCell(worldX, worldY) {
@@ -956,9 +1018,7 @@ export class BattleScene extends Phaser.Scene {
     const selectedTower = TOWER_TYPES[this.state.selectedTowerType];
     const hoveredTower = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
     const actionHint = hoveredTower
-      ? hoveredTower.level >= MAX_TOWER_LEVEL
-        ? "Max level tower"
-        : `Upgrade ${hoveredTower.type} for ${getUpgradeCost(hoveredTower)}g or delete with X/right-click`
+      ? `${hoveredTower.type.toUpperCase()} L${hoveredTower.level} selected`
       : canBuildTower(this.state, this.state.cursor.x, this.state.cursor.y, this.state.selectedTowerType)
         ? `Build ${selectedTower.name} for ${selectedTower.cost}g`
         : "Tile unavailable for the selected tower";

@@ -452,16 +452,26 @@ button:disabled {
 }
 
 .tower-actions button {
-  width: 42px;
-  height: 42px;
+  min-height: 38px;
+  padding: 0 14px;
   border: 1px solid rgba(255, 220, 158, 0.24);
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(255, 221, 154, 0.12), rgba(0, 0, 0, 0)),
+    linear-gradient(180deg, rgba(255, 221, 154, 0.14), rgba(0, 0, 0, 0)),
     linear-gradient(180deg, rgba(59, 49, 35, 0.98), rgba(32, 35, 27, 0.96));
   color: var(--ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
   box-shadow: var(--shadow-tight);
   cursor: pointer;
+}
+
+.tower-actions button:disabled {
+  opacity: 0.52;
+  cursor: default;
 }
 
 .tower-actions button:first-child {
@@ -470,6 +480,18 @@ button:disabled {
 
 .tower-actions button:last-child {
   color: color-mix(in srgb, var(--danger) 86%, white 14%);
+}
+
+@media (max-width: 820px) {
+  .tower-actions {
+    gap: 6px;
+  }
+
+  .tower-actions button {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 0.72rem;
+  }
 }
 
 .overlay-card {
