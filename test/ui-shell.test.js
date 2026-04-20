@@ -9,6 +9,81 @@ const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
+function extractMethodBody(source, methodName) {
+  const signatureIndex = source.indexOf(`${methodName}(`);
+  if (signatureIndex === -1) {
+    return null;
+  }
+
+  const openBraceIndex = source.indexOf("{", signatureIndex);
+  if (openBraceIndex === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let index = openBraceIndex;
+  let state = "code";
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (state === "code") {
+      if (char === "'") {
+        state = "single";
+      } else if (char === '"') {
+        state = "double";
+      } else if (char === "`") {
+        state = "template";
+      } else if (char === "/" && next === "/") {
+        state = "line-comment";
+        index += 1;
+      } else if (char === "/" && next === "*") {
+        state = "block-comment";
+        index += 1;
+      } else if (char === "{") {
+        depth += 1;
+      } else if (char === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          return source.slice(openBraceIndex + 1, index);
+        }
+      }
+    } else if (state === "single") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "'") {
+        state = "code";
+      }
+    } else if (state === "double") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === '"') {
+        state = "code";
+      }
+    } else if (state === "template") {
+      if (char === "\\" && next) {
+        index += 1;
+      } else if (char === "`") {
+        state = "code";
+      }
+    } else if (state === "line-comment") {
+      if (char === "\n") {
+        state = "code";
+      }
+    } else if (state === "block-comment") {
+      if (char === "*" && next === "/") {
+        state = "code";
+        index += 1;
+      }
+    }
+
+    index += 1;
+  }
+
+  return null;
+}
+
 test("ui shell exposes only the phaser mount and battle controls", () => {
   assert.match(html, /id="game-root"/);
   assert.match(html, /id="battle-controls"/);
@@ -41,10 +116,12 @@ test("tower actions use readable labels and the battle scene is ready for contex
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
 
-  assert.match(
-    battleSceneSource,
-    /syncTowerActionOverlay\(\)\s*\{[\s\S]*?hoveredTower[\s\S]*?(Upgrade|Delete|Max)[\s\S]*?getUpgradeCost[\s\S]*?MAX_TOWER_LEVEL/,
-  );
+  const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
+  assert.ok(syncTowerActionOverlayBody);
+  assert.match(syncTowerActionOverlayBody, /hoveredTower/);
+  assert.match(syncTowerActionOverlayBody, /Upgrade|Delete|Max/);
+  assert.match(syncTowerActionOverlayBody, /getUpgradeCost/);
+  assert.match(syncTowerActionOverlayBody, /MAX_TOWER_LEVEL/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
