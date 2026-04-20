@@ -41,12 +41,15 @@ test("tower actions use readable labels and the battle scene is ready for contex
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
 
-  assert.match(battleSceneSource, /this\.controls\.upgradeAction\.textContent\s*=/);
-  assert.match(battleSceneSource, /this\.controls\.deleteAction\.textContent\s*=/);
-  assert.doesNotMatch(
-    battleSceneSource,
-    /Upgrade \$\{hoveredTower\.type\} for \$\{getUpgradeCost\(hoveredTower\)\}g or delete with X\/right-click/,
+  const syncBattleControlsMatch = battleSceneSource.match(
+    /syncBattleControls\(\)\s*\{([\s\S]*?)\n  }\r?\n\r?\n  setBattleControlsVisible\(/,
   );
+  assert.ok(syncBattleControlsMatch);
+
+  const syncBattleControlsSource = syncBattleControlsMatch[1];
+  assert.match(syncBattleControlsSource, /hoveredTower/);
+  assert.match(syncBattleControlsSource, /getUpgradeCost/);
+  assert.match(syncBattleControlsSource, /MAX_TOWER_LEVEL/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
