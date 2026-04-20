@@ -37,6 +37,18 @@ test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(gameMainSource, /createGame\(mountNode\)/);
 });
 
+test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
+  assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
+  assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
+
+  assert.match(battleSceneSource, /this\.controls\.upgradeAction\.textContent\s*=/);
+  assert.match(battleSceneSource, /this\.controls\.deleteAction\.textContent\s*=/);
+  assert.doesNotMatch(
+    battleSceneSource,
+    /Upgrade \$\{hoveredTower\.type\} for \$\{getUpgradeCost\(hoveredTower\)\}g or delete with X\/right-click/,
+  );
+});
+
 test("quick play movement buttons render lucide arrow icons", () => {
   assert.match(html, /data-move="up"[\s\S]*data-lucide="arrow-up"/);
   assert.match(html, /data-move="left"[\s\S]*data-lucide="arrow-left"/);
