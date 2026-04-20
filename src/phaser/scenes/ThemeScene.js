@@ -1,12 +1,26 @@
 import Phaser from "phaser";
-import { getStageDefinition, getThemeStageNumbers } from "../../game/stages.js";
+import { getStageDefinition, getThemeOrder, getThemeStageNumbers } from "../../game/stages.js";
 import { beginBattleFromSelection, createGameSession, returnToCampaign, selectStage } from "../state/game-session.js";
 import { isStageUnlocked } from "../../game/campaign-progress.js";
 import { createBackdrop, createCommandButton, createStatusStrip, createTitleLockup } from "../ui/components.js";
 import { getSceneLayout } from "../ui/layout.js";
+import themeFundamentalsSigilUrl from "../../assets/phaser-ui/theme-fundamentals-sigil.png";
+import themeLateOperationsSigilUrl from "../../assets/phaser-ui/theme-late-operations-sigil.png";
+import themePressureSigilUrl from "../../assets/phaser-ui/theme-pressure-sigil.png";
+
+const THEME_SIGIL_KEYS = [
+  { key: "phaser-ui-theme-sigil-0", url: themeFundamentalsSigilUrl },
+  { key: "phaser-ui-theme-sigil-1", url: themePressureSigilUrl },
+  { key: "phaser-ui-theme-sigil-2", url: themeLateOperationsSigilUrl },
+];
 
 function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
+}
+
+function getThemeSigilKey(theme) {
+  const themeIndex = getThemeOrder().indexOf(theme);
+  return THEME_SIGIL_KEYS[Math.max(0, themeIndex)]?.key ?? THEME_SIGIL_KEYS[0].key;
 }
 
 function hideBattleControls() {
@@ -24,6 +38,14 @@ function getThemeStageIndex(stageNumbers, stageNumber) {
 export class ThemeScene extends Phaser.Scene {
   constructor() {
     super("ThemeScene");
+  }
+
+  preload() {
+    for (const { key, url } of THEME_SIGIL_KEYS) {
+      if (!this.textures.exists(key)) {
+        this.load.image(key, url);
+      }
+    }
   }
 
   create() {
@@ -138,6 +160,15 @@ export class ThemeScene extends Phaser.Scene {
     const summaryCopy = isCompactBriefing
       ? `${stage.summary.split(".")[0].trim()}.`
       : stage.summary;
+    const hasThemeArt = !isCompactBriefing && summaryVisible;
+    const sigilY = summaryTop + Math.round(summaryHeight * 0.28);
+
+    if (hasThemeArt) {
+      const sigil = this.add.image(layout.centerX, sigilY, getThemeSigilKey(stage.theme)).setOrigin(0.5);
+      sigil.setScale(layout.isMobile ? 0.17 : 0.21);
+      sigil.setAlpha(0.96);
+    }
+
     const summaryGraphics = this.add.graphics();
     if (summaryVisible) {
       summaryGraphics.fillStyle(0x14201b, 0.72);
@@ -157,12 +188,12 @@ export class ThemeScene extends Phaser.Scene {
         .setOrigin(0.5, 0);
 
       this.add
-        .text(layout.centerX, summaryBodyY, summaryCopy, {
+        .text(layout.centerX, hasThemeArt ? summaryBodyY + Math.round(summaryHeight * 0.18) : summaryBodyY, summaryCopy, {
           color: "#ece5d7",
           fontFamily: "Segoe UI",
           fontSize: `${summaryBodyFontSize}px`,
           align: "center",
-          wordWrap: { width: summaryWidth - (layout.isMobile ? 36 : 42) },
+          wordWrap: { width: summaryWidth - (layout.isMobile ? 48 : 64) },
           lineSpacing: summaryHeight < 140 ? 6 : 8,
         })
         .setOrigin(0.5, 0);

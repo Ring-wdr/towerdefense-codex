@@ -45,6 +45,7 @@ import {
   returnFromBattleToTheme,
   selectStage,
 } from "../state/game-session.js";
+import { getBattleViewportLayout } from "../ui/layout.js";
 
 const BOARD_WIDTH = GRID_COLS * CELL_SIZE;
 const BOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
@@ -120,6 +121,10 @@ export class BattleScene extends Phaser.Scene {
     this.towerSprites = new Map();
     this.enemySprites = new Map();
     this.boardOffset = { x: 0, y: 0 };
+    this.boardScale = 1;
+    this.scaledCellSize = CELL_SIZE;
+    this.scaledBoardWidth = BOARD_WIDTH;
+    this.scaledBoardHeight = BOARD_HEIGHT;
     this.lastTickAt = 0;
     this.controls = null;
     this.domListeners = [];
@@ -169,6 +174,7 @@ export class BattleScene extends Phaser.Scene {
       lineSpacing: 5,
       wordWrap: { width: 380 },
     });
+    this.helpText.setVisible(false);
     this.statusText = this.add.text(0, 0, "", {
       color: "#f5efe1",
       fontFamily: "Trebuchet MS",
@@ -183,8 +189,8 @@ export class BattleScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
 
     this.bindBattleControls();
-    this.handleResize();
     this.syncBattleControls();
+    this.handleResize();
     this.renderScene();
   }
 
@@ -314,18 +320,53 @@ export class BattleScene extends Phaser.Scene {
   }
 
   handleResize() {
-    const horizontalGap = Math.max(24, Math.round((this.scale.width - BOARD_WIDTH) / 2));
-    const verticalGap = Math.max(24, Math.round((this.scale.height - BOARD_HEIGHT) / 2));
+    const dockBottomPadding = this.getDockBottomPadding();
+    const viewport = getBattleViewportLayout(this, BOARD_WIDTH, BOARD_HEIGHT, {
+      topPadding: 92,
+      bottomPadding: 24,
+      forceBottomDock: true,
+      dockBottomPadding,
+      compactDockBottomPadding: dockBottomPadding,
+      maxScale: 1,
+    });
 
     this.boardOffset = {
-      x: horizontalGap,
-      y: verticalGap,
+      x: viewport.boardLeft,
+      y: viewport.boardTop,
     };
+    this.boardScale = viewport.scale;
+    this.scaledCellSize = CELL_SIZE * viewport.scale;
+    this.scaledBoardWidth = viewport.boardWidth;
+    this.scaledBoardHeight = viewport.boardHeight;
 
     this.hudText.setPosition(24, 20);
+    this.hudText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
+    this.hudText.setFontSize(this.scale.width <= 480 ? "14px" : "18px");
     this.helpText.setPosition(24, this.scale.height - 116);
-    this.helpText.setWordWrapWidth(Math.max(280, this.scale.width - 48));
+    this.helpText.setWordWrapWidth(Math.max(180, this.scale.width - 48));
+    this.helpText.setFontSize(this.scale.width <= 480 ? "13px" : "15px");
     this.statusText.setPosition(this.scale.width / 2, 36);
+    this.statusText.setOrigin(0.5, 0);
+    this.statusText.setFontSize(this.scale.width <= 480 ? "22px" : "28px");
+  }
+
+  getDockBottomPadding() {
+    if (!this.controls?.dock) {
+      return 160;
+    }
+
+    const wasHidden = this.controls.dock.hidden;
+    if (wasHidden) {
+      this.controls.dock.hidden = false;
+    }
+
+    const dockHeight = this.controls.dock.getBoundingClientRect().height;
+
+    if (wasHidden) {
+      this.controls.dock.hidden = true;
+    }
+
+    return Math.max(160, Math.ceil(dockHeight) + 20);
   }
 
   handlePointerDown(pointer) {
@@ -503,13 +544,13 @@ export class BattleScene extends Phaser.Scene {
     const localX = worldX - this.boardOffset.x;
     const localY = worldY - this.boardOffset.y;
 
-    if (localX < 0 || localY < 0 || localX >= BOARD_WIDTH || localY >= BOARD_HEIGHT) {
+    if (localX < 0 || localY < 0 || localX >= this.scaledBoardWidth || localY >= this.scaledBoardHeight) {
       return null;
     }
 
     return {
-      x: Math.floor(localX / CELL_SIZE),
-      y: Math.floor(localY / CELL_SIZE),
+      x: Math.floor(localX / this.scaledCellSize),
+      y: Math.floor(localY / this.scaledCellSize),
     };
   }
 
@@ -533,7 +574,12 @@ export class BattleScene extends Phaser.Scene {
 
   drawBoard() {
     this.graphics.lineStyle(4, 0x0b120d, 1);
-    this.graphics.strokeRect(this.boardOffset.x, this.boardOffset.y, BOARD_WIDTH, BOARD_HEIGHT);
+    this.graphics.strokeRect(
+      this.boardOffset.x,
+      this.boardOffset.y,
+      this.scaledBoardWidth,
+      this.scaledBoardHeight,
+    );
   }
 
   syncBoardTiles() {
@@ -552,7 +598,6 @@ export class BattleScene extends Phaser.Scene {
           const texturePool = isRoad ? ROAD_TILE_TEXTURE_KEYS : GRASS_TILE_TEXTURE_KEYS;
           const textureKey = texturePool[Math.abs((x * 31 + y * 17) % texturePool.length)];
           const tile = this.add.image(0, 0, textureKey).setOrigin(0, 0);
-          tile.setDisplaySize(CELL_SIZE, CELL_SIZE);
           this.tileImages.push(tile);
         }
       }
@@ -562,9 +607,10 @@ export class BattleScene extends Phaser.Scene {
     for (let y = 0; y < GRID_ROWS; y += 1) {
       for (let x = 0; x < GRID_COLS; x += 1) {
         const tile = this.tileImages[index];
+        tile.setDisplaySize(this.scaledCellSize, this.scaledCellSize);
         tile.setPosition(
-          this.boardOffset.x + x * CELL_SIZE,
-          this.boardOffset.y + y * CELL_SIZE,
+          this.boardOffset.x + x * this.scaledCellSize,
+          this.boardOffset.y + y * this.scaledCellSize,
         );
         index += 1;
       }
@@ -575,13 +621,13 @@ export class BattleScene extends Phaser.Scene {
     this.graphics.lineStyle(1, 0x38503a, 0.85);
 
     for (let column = 0; column <= GRID_COLS; column += 1) {
-      const x = this.boardOffset.x + column * CELL_SIZE;
-      this.graphics.lineBetween(x, this.boardOffset.y, x, this.boardOffset.y + BOARD_HEIGHT);
+      const x = this.boardOffset.x + column * this.scaledCellSize;
+      this.graphics.lineBetween(x, this.boardOffset.y, x, this.boardOffset.y + this.scaledBoardHeight);
     }
 
     for (let row = 0; row <= GRID_ROWS; row += 1) {
-      const y = this.boardOffset.y + row * CELL_SIZE;
-      this.graphics.lineBetween(this.boardOffset.x, y, this.boardOffset.x + BOARD_WIDTH, y);
+      const y = this.boardOffset.y + row * this.scaledCellSize;
+      this.graphics.lineBetween(this.boardOffset.x, y, this.boardOffset.x + this.scaledBoardWidth, y);
     }
   }
 
@@ -594,13 +640,14 @@ export class BattleScene extends Phaser.Scene {
     );
     const cursorTower = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
     const color = cursorTower ? 0xe4c47a : buildable ? 0x7fd16f : 0xd35a5a;
+    const inset = Math.max(2, Math.round(this.scaledCellSize * 0.04));
 
     this.graphics.lineStyle(4, color, 1);
     this.graphics.strokeRect(
-      this.boardOffset.x + this.state.cursor.x * CELL_SIZE + 2,
-      this.boardOffset.y + this.state.cursor.y * CELL_SIZE + 2,
-      CELL_SIZE - 4,
-      CELL_SIZE - 4,
+      this.boardOffset.x + this.state.cursor.x * this.scaledCellSize + inset,
+      this.boardOffset.y + this.state.cursor.y * this.scaledCellSize + inset,
+      this.scaledCellSize - inset * 2,
+      this.scaledCellSize - inset * 2,
     );
   }
 
@@ -626,9 +673,9 @@ export class BattleScene extends Phaser.Scene {
         this.towerSprites.set(tower.id, sprite);
       }
 
-      const x = this.boardOffset.x + tower.x * CELL_SIZE + CELL_SIZE / 2;
-      const y = this.boardOffset.y + tower.y * CELL_SIZE + CELL_SIZE / 2;
-      const size = Math.min(CELL_SIZE, 54 + tower.level * 2);
+      const x = this.boardOffset.x + tower.x * this.scaledCellSize + this.scaledCellSize / 2;
+      const y = this.boardOffset.y + tower.y * this.scaledCellSize + this.scaledCellSize / 2;
+      const size = Math.min(this.scaledCellSize, this.scaleLength(54 + tower.level * 2));
       sprite.setPosition(x, y);
       sprite.setDisplaySize(size, size);
     }
@@ -636,9 +683,9 @@ export class BattleScene extends Phaser.Scene {
 
   drawTowerBadges() {
     for (const tower of this.state.towers) {
-      const x = this.boardOffset.x + tower.x * CELL_SIZE + CELL_SIZE / 2;
-      const y = this.boardOffset.y + tower.y * CELL_SIZE + CELL_SIZE / 2;
-      const radius = 12 + tower.level * 4;
+      const x = this.boardOffset.x + tower.x * this.scaledCellSize + this.scaledCellSize / 2;
+      const y = this.boardOffset.y + tower.y * this.scaledCellSize + this.scaledCellSize / 2;
+      const radius = this.scaleLength(12 + tower.level * 4);
 
       this.graphics.lineStyle(2, 0xf5efe1, 1);
       this.graphics.strokeCircle(x, y, radius / 1.8);
@@ -646,7 +693,11 @@ export class BattleScene extends Phaser.Scene {
       this.graphics.lineStyle(0);
       for (let index = 0; index < tower.level; index += 1) {
         this.graphics.fillStyle(0xf5efe1, 1);
-        this.graphics.fillCircle(x - 10 + index * 10, y + radius + 8, 3);
+        this.graphics.fillCircle(
+          x - this.scaleLength(10) + index * this.scaleLength(10),
+          y + radius + this.scaleLength(8),
+          Math.max(2, this.scaleLength(3)),
+        );
       }
     }
   }
@@ -674,9 +725,9 @@ export class BattleScene extends Phaser.Scene {
       }
 
       const point = getEnemyPosition(enemy);
-      const x = this.boardOffset.x + point.x;
-      const y = this.boardOffset.y + point.y;
-      const size = this.getEnemySpriteSize(enemy);
+      const x = this.boardOffset.x + this.scaleLength(point.x);
+      const y = this.boardOffset.y + this.scaleLength(point.y);
+      const size = this.getEnemySpriteDisplaySize(enemy);
       sprite.setPosition(x, y);
       sprite.setDisplaySize(size, size);
     }
@@ -686,25 +737,31 @@ export class BattleScene extends Phaser.Scene {
     for (const enemy of this.state.enemies) {
       const point = getEnemyPosition(enemy);
       const species = ENEMY_SPECIES[enemy.species];
-      const x = this.boardOffset.x + point.x;
-      const y = this.boardOffset.y + point.y;
-      const halfWidth = Math.round(this.getEnemySpriteSize(enemy) * 0.52);
-      const top = y - halfWidth - 8;
+      const x = this.boardOffset.x + this.scaleLength(point.x);
+      const y = this.boardOffset.y + this.scaleLength(point.y);
+      const spriteSize = this.getEnemySpriteDisplaySize(enemy);
+      const halfWidth = Math.round(spriteSize * 0.52);
+      const top = y - halfWidth - this.scaleLength(8);
 
       if (enemy.slowTicks > 0) {
         this.graphics.lineStyle(2, 0x67c498, 0.55);
-        this.graphics.strokeCircle(x, y, this.getEnemySpriteSize(enemy) * 0.42);
+        this.graphics.strokeCircle(x, y, spriteSize * 0.42);
       }
 
       this.graphics.fillStyle(0x220909, 0.95);
-      this.graphics.fillRect(x - halfWidth, top, halfWidth * 2, 5);
+      this.graphics.fillRect(x - halfWidth, top, halfWidth * 2, Math.max(3, this.scaleLength(5)));
       this.graphics.fillStyle(enemy.kind === "boss" ? 0xf0b45d : 0x68d06f, 1);
-      this.graphics.fillRect(x - halfWidth, top, halfWidth * 2 * Math.max(0, enemy.health / enemy.maxHealth), 5);
+      this.graphics.fillRect(
+        x - halfWidth,
+        top,
+        halfWidth * 2 * Math.max(0, enemy.health / enemy.maxHealth),
+        Math.max(3, this.scaleLength(5)),
+      );
 
       if (!this.enemySprites.has(enemy.id) && species) {
         const fill = Phaser.Display.Color.HexStringToColor(species.color).color;
         this.graphics.fillStyle(fill, 1);
-        this.graphics.fillCircle(x, y, species.size);
+        this.graphics.fillCircle(x, y, this.scaleLength(species.size));
       }
     }
   }
@@ -715,17 +772,17 @@ export class BattleScene extends Phaser.Scene {
 
       this.graphics.lineStyle(effect.type === "cannon" ? 3 : 2, color, 0.9);
       this.graphics.lineBetween(
-        this.boardOffset.x + effect.from.x,
-        this.boardOffset.y + effect.from.y,
-        this.boardOffset.x + effect.to.x,
-        this.boardOffset.y + effect.to.y,
+        this.boardOffset.x + this.scaleLength(effect.from.x),
+        this.boardOffset.y + this.scaleLength(effect.from.y),
+        this.boardOffset.x + this.scaleLength(effect.to.x),
+        this.boardOffset.y + this.scaleLength(effect.to.y),
       );
 
       if (effect.type === "cannon") {
         this.graphics.strokeCircle(
-          this.boardOffset.x + effect.to.x,
-          this.boardOffset.y + effect.to.y,
-          effect.radius,
+          this.boardOffset.x + this.scaleLength(effect.to.x),
+          this.boardOffset.y + this.scaleLength(effect.to.y),
+          this.scaleLength(effect.radius),
         );
       }
     }
@@ -747,13 +804,21 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  getEnemySpriteSize(enemy) {
+  getEnemyBaseSpriteSize(enemy) {
     if (enemy.kind === "boss") {
       return 72;
     }
 
     const species = ENEMY_SPECIES[enemy.species];
     return Math.max(42, Math.round((species?.size ?? 10) * 4.2));
+  }
+
+  getEnemySpriteDisplaySize(enemy) {
+    return this.scaleLength(this.getEnemyBaseSpriteSize(enemy));
+  }
+
+  scaleLength(length) {
+    return length * this.boardScale;
   }
 
   destroyDisplayMap(displayMap) {
@@ -775,15 +840,9 @@ export class BattleScene extends Phaser.Scene {
         : "Tile unavailable for the selected tower";
 
     this.hudText.setText([
-      `Stage ${this.state.stage}  Wave ${this.state.wave}`,
-      `Lives ${this.state.lives}  Gold ${this.state.gold}  Score ${this.state.score}`,
-      `Tower ${selectedTower.name}  Cursor ${this.state.cursor.x},${this.state.cursor.y}`,
-      `Status ${this.state.status}`,
+      `Stage ${this.state.stage}  Wave ${this.state.wave}  Lives ${this.state.lives}  Gold ${this.state.gold}`,
+      `Tower ${selectedTower.name}  Cursor ${this.state.cursor.x},${this.state.cursor.y}  ${actionHint}`,
     ]);
-
-    this.helpText.setText(
-      `1-5 select tower  |  arrows move cursor  |  Enter/B build  |  U upgrade  |  X delete  |  P pause  |  R restart\n${actionHint}`,
-    );
 
     if (this.state.status === "running") {
       this.statusText.setText("");

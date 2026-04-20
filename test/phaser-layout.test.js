@@ -78,3 +78,64 @@ test("getSceneLayout clamps tiny viewport geometry", () => {
   assert.ok(row.positions[0] <= row.positions[1]);
   assert.ok(row.positions[1] <= row.positions[2]);
 });
+
+test("getBattleViewportLayout shrinks the battle board to fit narrow viewports", () => {
+  assert.equal(typeof layoutModule.getBattleViewportLayout, "function");
+
+  const layout = layoutModule.getBattleViewportLayout(createScene(390, 720), 720, 480);
+
+  assert.ok(layout.scale < 1);
+  assert.ok(layout.boardWidth < 720);
+  assert.ok(layout.boardHeight < 480);
+  assert.ok(layout.boardLeft >= 0);
+  assert.ok(layout.boardRight <= 390);
+  assert.ok(layout.boardBottom <= 720);
+});
+
+test("getBattleViewportLayout preserves the base board size on roomy viewports", () => {
+  assert.equal(typeof layoutModule.getBattleViewportLayout, "function");
+
+  const layout = layoutModule.getBattleViewportLayout(createScene(1440, 900), 720, 480);
+
+  assert.equal(layout.scale, 1);
+  assert.equal(layout.boardWidth, 720);
+  assert.equal(layout.boardHeight, 480);
+  assert.equal(layout.boardLeft, Math.round((1440 - 720) / 2));
+});
+
+test("getBattleViewportLayout pins the battle board directly below the HUD padding", () => {
+  const layout = layoutModule.getBattleViewportLayout(createScene(1280, 900), 720, 480, {
+    topPadding: 92,
+    bottomPadding: 24,
+  });
+
+  assert.equal(layout.boardTop, 92);
+});
+
+test("getBattleViewportLayout reserves space for the bottom dock on tablet widths", () => {
+  const layout = layoutModule.getBattleViewportLayout(createScene(735, 869), 640, 640, {
+    topPadding: 92,
+    bottomPadding: 24,
+    forceBottomDock: true,
+    dockBottomPadding: 220,
+    compactDockBottomPadding: 232,
+  });
+
+  assert.equal(layout.usesBottomDock, true);
+  assert.equal(layout.bottomPadding, 220);
+  assert.ok(layout.scale < 1);
+  assert.ok(layout.boardBottom <= 869 - 220);
+});
+
+test("getBattleViewportLayout can reserve bottom dock space on wide viewports too", () => {
+  const layout = layoutModule.getBattleViewportLayout(createScene(1280, 900), 720, 480, {
+    topPadding: 92,
+    bottomPadding: 24,
+    forceBottomDock: true,
+    dockBottomPadding: 180,
+  });
+
+  assert.equal(layout.usesBottomDock, true);
+  assert.equal(layout.bottomPadding, 180);
+  assert.ok(layout.boardBottom <= 900 - 180);
+});

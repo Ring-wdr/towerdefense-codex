@@ -2,9 +2,24 @@ import Phaser from "phaser";
 import { cycleThemeSelection, createGameSession, selectStage } from "../state/game-session.js";
 import { createBackdrop, createCommandButton, createStatusStrip, createTitleLockup } from "../ui/components.js";
 import { getSceneLayout } from "../ui/layout.js";
+import { getThemeOrder } from "../../game/stages.js";
+import themeFundamentalsSigilUrl from "../../assets/phaser-ui/theme-fundamentals-sigil.png";
+import themeLateOperationsSigilUrl from "../../assets/phaser-ui/theme-late-operations-sigil.png";
+import themePressureSigilUrl from "../../assets/phaser-ui/theme-pressure-sigil.png";
+
+const THEME_SIGIL_KEYS = [
+  { key: "phaser-ui-theme-sigil-0", url: themeFundamentalsSigilUrl },
+  { key: "phaser-ui-theme-sigil-1", url: themePressureSigilUrl },
+  { key: "phaser-ui-theme-sigil-2", url: themeLateOperationsSigilUrl },
+];
 
 function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
+}
+
+function getThemeSigilKey(theme) {
+  const themeIndex = getThemeOrder().indexOf(theme);
+  return THEME_SIGIL_KEYS[Math.max(0, themeIndex)]?.key ?? THEME_SIGIL_KEYS[0].key;
 }
 
 function hideBattleControls() {
@@ -17,6 +32,14 @@ function hideBattleControls() {
 export class CampaignScene extends Phaser.Scene {
   constructor() {
     super("CampaignScene");
+  }
+
+  preload() {
+    for (const { key, url } of THEME_SIGIL_KEYS) {
+      if (!this.textures.exists(key)) {
+        this.load.image(key, url);
+      }
+    }
   }
 
   create() {
@@ -77,34 +100,40 @@ export class CampaignScene extends Phaser.Scene {
             wordWrap: { width: layout.contentWidth - (layout.isMobile ? 28 : 120) },
             lineSpacing: 6,
           },
-        )
-        .setOrigin(0.5, 0);
+      )
+      .setOrigin(0.5, 0);
     } else {
+      const sigil = this.add
+        .image(layout.centerX, layout.focus.centerY - 8, getThemeSigilKey(session.selectedTheme))
+        .setOrigin(0.5);
+      sigil.setScale(layout.isMobile ? 0.24 : 0.3);
+      sigil.setAlpha(0.95);
+
       this.add
         .text(
           layout.centerX,
-          layout.focus.top + 104,
+          layout.focus.top + (layout.isMobile ? 176 : 208),
           "Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen.",
           {
             color: "#d8d1c4",
             fontFamily: "Segoe UI",
-            fontSize: "20px",
+            fontSize: `${layout.isMobile ? 16 : 20}px`,
             align: "center",
-            wordWrap: { width: layout.contentWidth - 210 },
-            lineSpacing: 7,
+            wordWrap: { width: layout.contentWidth - (layout.isMobile ? 34 : 210) },
+            lineSpacing: layout.isMobile ? 6 : 7,
           },
         )
         .setOrigin(0.5, 0);
 
-      const stripY = layout.focus.bottom - 88;
-      const stripWidth = Math.min(layout.contentWidth / 2 - 12, 220);
+      const stripY = layout.focus.bottom - (layout.isMobile ? 82 : 88);
+      const stripWidth = Math.min(layout.contentWidth / 2 - 12, layout.isMobile ? 148 : 220);
       createStatusStrip(this, layout.centerX - stripWidth / 2 - 8, stripY, stripWidth, "CLEARED", `${session.clearedStages.length} STAGES`, {
         labelColor: "#88a98d",
-        valueSize: 24,
+        valueSize: layout.isMobile ? 20 : 24,
       });
       createStatusStrip(this, layout.centerX + stripWidth / 2 + 8, stripY, stripWidth, "SELECTION", `STAGE ${session.selectedStage}`, {
         labelColor: "#d9af74",
-        valueSize: 24,
+        valueSize: layout.isMobile ? 20 : 24,
       });
     }
 

@@ -2,6 +2,9 @@ import Phaser from "phaser";
 import { cycleThemeSelection, createGameSession } from "../state/game-session.js";
 import { createBackdrop, createCommandButton, createTitleLockup } from "../ui/components.js";
 import { getSceneLayout } from "../ui/layout.js";
+import titleCommandCrestUrl from "../../assets/phaser-ui/title-command-crest.png";
+
+const TITLE_COMMAND_CREST_KEY = "phaser-ui-title-command-crest";
 
 function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
@@ -10,6 +13,12 @@ function getSession(scene) {
 export class TitleScene extends Phaser.Scene {
   constructor() {
     super("TitleScene");
+  }
+
+  preload() {
+    if (!this.textures.exists(TITLE_COMMAND_CREST_KEY)) {
+      this.load.image(TITLE_COMMAND_CREST_KEY, titleCommandCrestUrl);
+    }
   }
 
   create() {
@@ -61,6 +70,13 @@ export class TitleScene extends Phaser.Scene {
         },
       )
       .setOrigin(0.5, 0);
+
+    if (!isCompactTitle) {
+      const crestY = lockup.titleText.y + lockup.titleText.height + (layout.isMobile ? 132 : 164);
+      const crest = this.add.image(layout.centerX, crestY, TITLE_COMMAND_CREST_KEY).setOrigin(0.5);
+      crest.setScale(layout.isMobile ? 0.22 : 0.28);
+      crest.setAlpha(0.96);
+    }
 
     const helperCopy = layout.isMobile
       ? "Single campaign route. Battle controls stay external."

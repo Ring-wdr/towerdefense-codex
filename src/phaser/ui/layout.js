@@ -19,6 +19,49 @@ function getCommandRow(layout, count, preferredWidth = 180) {
   };
 }
 
+export function getBattleViewportLayout(scene, boardWidth, boardHeight, options = {}) {
+  const width = scene.scale.width;
+  const height = scene.scale.height;
+  const horizontalPadding = options.horizontalPadding ?? Math.max(12, Math.round(width * 0.06));
+  const topPadding = options.topPadding ?? Math.max(72, Math.round(height * 0.13));
+  const baseBottomPadding = options.bottomPadding ?? Math.max(20, Math.round(height * 0.04));
+  const dockBreakpoint = options.dockBreakpoint ?? 0;
+  const forceBottomDock = options.forceBottomDock ?? false;
+  const compactDockBreakpoint = options.compactDockBreakpoint ?? 680;
+  const usesBottomDock = forceBottomDock || (dockBreakpoint > 0 && width <= dockBreakpoint);
+  const dockBottomPadding = width <= compactDockBreakpoint
+    ? (options.compactDockBottomPadding ?? options.dockBottomPadding ?? 232)
+    : (options.dockBottomPadding ?? 220);
+  const bottomPadding = usesBottomDock ? Math.max(baseBottomPadding, dockBottomPadding) : baseBottomPadding;
+  const maxScale = options.maxScale ?? 1;
+  const minScale = options.minScale ?? 0.35;
+  const availableWidth = Math.max(0, width - horizontalPadding * 2);
+  const availableHeight = Math.max(0, height - topPadding - bottomPadding);
+  const widthScale = boardWidth > 0 ? availableWidth / boardWidth : 1;
+  const heightScale = boardHeight > 0 ? availableHeight / boardHeight : 1;
+  const scale = Math.max(minScale, Math.min(maxScale, widthScale, heightScale));
+  const scaledBoardWidth = Math.round(boardWidth * scale);
+  const scaledBoardHeight = Math.round(boardHeight * scale);
+  const boardLeft = Math.max(0, Math.round((width - scaledBoardWidth) / 2));
+  const boardTop = topPadding;
+
+  return {
+    width,
+    height,
+    scale,
+    boardLeft,
+    boardTop,
+    boardWidth: scaledBoardWidth,
+    boardHeight: scaledBoardHeight,
+    boardRight: boardLeft + scaledBoardWidth,
+    boardBottom: boardTop + scaledBoardHeight,
+    horizontalPadding,
+    topPadding,
+    bottomPadding,
+    usesBottomDock,
+  };
+}
+
 export function getSceneLayout(scene) {
   const width = scene.scale.width;
   const height = scene.scale.height;

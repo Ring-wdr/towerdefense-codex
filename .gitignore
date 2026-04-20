@@ -4,6 +4,7 @@ dist/
 .worktrees/
 worktrees/
 .superpowers/
+.playwright-cli/
 
 *.log
 vite-*.out.log
