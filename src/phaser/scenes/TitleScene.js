@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { cycleThemeSelection, createGameSession } from "../state/game-session.js";
+import { cycleThemeSelection, createGameSession, openShop } from "../state/game-session.js";
 import {
   createBackdrop,
   createBodyTextStyle,
@@ -90,7 +90,14 @@ export class TitleScene extends Phaser.Scene {
 
     const helperCopy = "단일 캠페인 루트. 각 전선은 순차적으로 개방된다.";
 
-    const commandRow = layout.getCommandRow(1, layout.isMobile ? 220 : 260);
+    const buttonWidth = Math.min(layout.contentWidth - (layout.isMobile ? 20 : 160), layout.isMobile ? 280 : 320);
+    const buttonHeight = Math.max(
+      44,
+      Math.min(layout.isMobile ? 48 : 52, Math.floor((layout.command.height - (layout.isMobile ? 10 : 12)) / 2)),
+    );
+    const commandGap = layout.isMobile ? 10 : 12;
+    const primaryButtonY = layout.command.top + buttonHeight / 2;
+    const secondaryButtonY = primaryButtonY + buttonHeight + commandGap;
     if (!isCompactTitle) {
       this.add
         .text(layout.centerX, layout.focus.bottom - (layout.isMobile ? 58 : 62), helperCopy, {
@@ -108,10 +115,10 @@ export class TitleScene extends Phaser.Scene {
 
     createCommandButton(
       this,
-      commandRow.positions[0],
-      isCompactTitle ? layout.command.top + commandRow.buttonHeight / 2 : layout.command.centerY,
-      commandRow.buttonWidth,
-      commandRow.buttonHeight,
+      layout.centerX,
+      primaryButtonY,
+      buttonWidth,
+      buttonHeight,
       "Start Campaign",
       () => {
         const nextSession = cycleThemeSelection(getSession(this), 0);
@@ -120,7 +127,24 @@ export class TitleScene extends Phaser.Scene {
       },
       {
         variant: "primary",
-        fontSize: layout.isMobile ? 24 : 30,
+        fontSize: layout.isMobile ? 22 : 28,
+      },
+    );
+
+    createCommandButton(
+      this,
+      layout.centerX,
+      secondaryButtonY,
+      buttonWidth,
+      buttonHeight,
+      "Shop",
+      () => {
+        const nextSession = openShop(getSession(this));
+        this.game.registry.set("session", nextSession);
+        this.scene.start("ShopScene");
+      },
+      {
+        fontSize: layout.isMobile ? 20 : 24,
       },
     );
   }

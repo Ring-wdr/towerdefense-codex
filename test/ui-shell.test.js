@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
+const phaserGameSource = readFileSync(new URL("../src/phaser/game.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
 const campaignSceneSource = readFileSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
@@ -250,7 +251,25 @@ test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(mainSource, /querySelectorAll\("\[data-tower-icon\]"\)/);
   assert.match(mainSource, /img\.src\s*=/);
   assert.match(gameMainSource, /createGameSession/);
+  assert.match(gameMainSource, /loadMetaProgress/);
   assert.match(gameMainSource, /createGame\(mountNode\)/);
+  assert.match(gameMainSource, /game\.registry\.set\("session",\s*createGameSession\(\)\);/);
+  assert.match(gameMainSource, /game\.registry\.set\("metaProgress",\s*loadMetaProgress\(\)\);/);
+});
+
+test("phaser game registers the new ShopScene", () => {
+  assert.match(phaserGameSource, /import\s+\{\s*ShopScene\s*\}\s+from "\.\/scenes\/ShopScene\.js";/);
+  assert.match(phaserGameSource, /scene:\s*\[TitleScene,\s*CampaignScene,\s*ThemeScene,\s*ShopScene,\s*BattleScene,\s*OverlayScene\]/);
+});
+
+test("title and campaign scenes expose the shop and title back buttons in source", () => {
+  assert.match(titleSceneSource, /"Shop"/);
+  assert.match(titleSceneSource, /openShop\(getSession\(this\)\)/);
+  assert.match(titleSceneSource, /this\.scene\.start\("ShopScene"\)/);
+
+  assert.match(campaignSceneSource, /"Back"/);
+  assert.match(campaignSceneSource, /returnToTitle\(getSession\(this\)\)/);
+  assert.match(campaignSceneSource, /this\.scene\.start\("TitleScene"\)/);
 });
 
 test("main entry guards against iOS double-tap zoom in the app shell", () => {
