@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
+const phaserGameSource = readFileSync(new URL("../src/phaser/game.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
 const campaignSceneSource = readFileSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
@@ -250,7 +251,25 @@ test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(mainSource, /querySelectorAll\("\[data-tower-icon\]"\)/);
   assert.match(mainSource, /img\.src\s*=/);
   assert.match(gameMainSource, /createGameSession/);
+  assert.match(gameMainSource, /loadMetaProgress/);
   assert.match(gameMainSource, /createGame\(mountNode\)/);
+  assert.match(gameMainSource, /game\.registry\.set\("session",\s*createGameSession\(\)\);/);
+  assert.match(gameMainSource, /game\.registry\.set\("metaProgress",\s*loadMetaProgress\(\)\);/);
+});
+
+test("phaser game registers the new ShopScene", () => {
+  assert.match(phaserGameSource, /import\s+\{\s*ShopScene\s*\}\s+from "\.\/scenes\/ShopScene\.js";/);
+  assert.match(phaserGameSource, /scene:\s*\[TitleScene,\s*CampaignScene,\s*ThemeScene,\s*ShopScene,\s*BattleScene,\s*OverlayScene\]/);
+});
+
+test("title and campaign scenes expose the shop and title back buttons in source", () => {
+  assert.match(titleSceneSource, /"Shop"/);
+  assert.match(titleSceneSource, /openShop\(getSession\(this\)\)/);
+  assert.match(titleSceneSource, /this\.scene\.start\("ShopScene"\)/);
+
+  assert.match(campaignSceneSource, /"Back"/);
+  assert.match(campaignSceneSource, /returnToTitle\(getSession\(this\)\)/);
+  assert.match(campaignSceneSource, /this\.scene\.start\("TitleScene"\)/);
 });
 
 test("main entry guards against iOS double-tap zoom in the app shell", () => {
@@ -261,10 +280,54 @@ test("main entry guards against iOS double-tap zoom in the app shell", () => {
 });
 
 test("battle scene opens on a ready state and exposes a start button for entry and breaks", () => {
+  const createBody = extractMethodBody(battleSceneSource, "create");
+
+  assert.ok(createBody);
   assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
-  assert.match(battleSceneSource, /this\.state\s*=\s*createInitialState\(stage\);/);
+  assert.match(createBody, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
+  assert.match(createBody, /this\.state\s*=\s*createInitialState\(stage,\s*metaProgress\);/);
   assert.doesNotMatch(battleSceneSource, /this\.state\s*=\s*startGame\(createInitialState\(stage\)\);/);
   assert.match(battleSceneSource, /this\.controls\.startButton\.textContent/);
+});
+
+test("battle scene boot reads permanent progression from the registry before building state", () => {
+  const createBody = extractMethodBody(battleSceneSource, "create");
+
+  assert.ok(createBody);
+  assert.match(createBody, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
+  assert.match(createBody, /this\.state = createInitialState\(stage,\s*metaProgress\);/);
+});
+
+test("battle scene restart preserves permanent progression when rebuilding state", () => {
+  const restartBattleBody = extractMethodBody(battleSceneSource, "restartBattle");
+
+  assert.ok(restartBattleBody);
+  assert.match(restartBattleBody, /this\.state = restartGame\(this\.state\.stage,\s*this\.state\.metaProgress\);/);
+  assert.match(restartBattleBody, /this\.handledAttackEffectIds\.clear\(\);/);
+  assert.match(restartBattleBody, /this\.renderScene\(\);/);
+});
+
+test("battle scene persists stage clear rewards through storage before session completion", () => {
+  const persistStageClearRewardsBody = extractMethodBody(battleSceneSource, "persistStageClearRewards");
+  const handleStatusTransitionBody = extractMethodBody(battleSceneSource, "handleStatusTransition");
+
+  assert.ok(persistStageClearRewardsBody);
+  assert.ok(handleStatusTransitionBody);
+  assert.match(battleSceneSource, /awardStageClearRewards/);
+  assert.match(battleSceneSource, /saveMetaProgress/);
+  assert.match(battleSceneSource, /persistStageClearRewards\(stageNumber\)/);
+  assert.match(persistStageClearRewardsBody, /this\.game\.registry\.get\("metaProgress"\)\s*\?\?\s*loadMetaProgress\(\)/);
+  assert.match(persistStageClearRewardsBody, /awardStageClearRewards\(metaProgress,\s*stageNumber\)/);
+  assert.match(persistStageClearRewardsBody, /saveMetaProgress\(nextMetaProgress\)/);
+  assert.match(persistStageClearRewardsBody, /this\.game\.registry\.set\("metaProgress",\s*savedProgress\)/);
+  assert.match(
+    handleStatusTransitionBody,
+    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
+  );
+  assert.match(
+    handleStatusTransitionBody,
+    /if \(this\.state\.status === "victory"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
+  );
 });
 
 test("battle scene lets s start the next wave from keyboard during ready states", () => {

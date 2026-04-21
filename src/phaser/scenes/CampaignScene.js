@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { cycleThemeSelection, createGameSession, selectStage } from "../state/game-session.js";
+import { cycleThemeSelection, createGameSession, returnToTitle, selectStage } from "../state/game-session.js";
 import {
   createBackdrop,
   createBodyTextStyle,
@@ -152,27 +152,39 @@ export class CampaignScene extends Phaser.Scene {
       });
     }
 
-    const commandRow = layout.getCommandRow(3, layout.isMobile ? 116 : 176);
-    createCommandButton(this, commandRow.positions[0], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Prev", () => {
+    const commandRow = layout.getCommandRow(4, layout.isMobile ? 104 : 152);
+    createCommandButton(this, commandRow.positions[0], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Back", () => {
+      const nextSession = returnToTitle(getSession(this));
+      this.game.registry.set("session", nextSession);
+      this.scene.start("TitleScene");
+    }, {
+      fontSize: layout.isMobile ? 18 : 22,
+    });
+
+    createCommandButton(this, commandRow.positions[1], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Prev", () => {
       const nextSession = cycleThemeSelection(getSession(this), -1);
       this.game.registry.set("session", nextSession);
       this.scene.restart();
+    }, {
+      fontSize: layout.isMobile ? 18 : 22,
     });
 
-    createCommandButton(this, commandRow.positions[1], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Briefing", () => {
+    createCommandButton(this, commandRow.positions[2], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Briefing", () => {
       const current = getSession(this);
       const nextSession = selectStage(current, current.selectedStage);
       this.game.registry.set("session", nextSession);
       this.scene.start("ThemeScene");
     }, {
       variant: "primary",
-      fontSize: layout.isMobile ? 21 : 25,
+      fontSize: layout.isMobile ? 18 : 22,
     });
 
-    createCommandButton(this, commandRow.positions[2], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Next", () => {
+    createCommandButton(this, commandRow.positions[3], layout.command.centerY, commandRow.buttonWidth, commandRow.buttonHeight, "Next", () => {
       const nextSession = cycleThemeSelection(getSession(this), 1);
       this.game.registry.set("session", nextSession);
       this.scene.restart();
+    }, {
+      fontSize: layout.isMobile ? 18 : 22,
     });
   }
 }

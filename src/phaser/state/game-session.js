@@ -22,6 +22,8 @@ function sceneToScreen(scene) {
       return "campaign-menu";
     case "theme":
       return "theme-page";
+    case "shop":
+      return "shop";
     case "battle":
       return "battle";
     case "campaign-complete":
@@ -108,6 +110,26 @@ export function returnToCampaign(session) {
       activeStage: null,
     },
     "campaign",
+  );
+}
+
+export function openShop(session) {
+  return withScene(
+    {
+      ...session,
+      activeStage: null,
+    },
+    "shop",
+  );
+}
+
+export function returnToTitle(session) {
+  return withScene(
+    {
+      ...session,
+      activeStage: null,
+    },
+    "title",
   );
 }
 

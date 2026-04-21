@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
+import { createMetaProgress } from "../src/game/meta-progress.js";
 import {
   buildTowerAtCursor,
   canBuildTower,
@@ -22,6 +24,8 @@ import {
   togglePause,
   upgradeTowerAtCursor,
 } from "../src/game/logic.js";
+
+const logicSource = readFileSync(new URL("../src/game/logic.js", import.meta.url), "utf8");
 
 function advance(state, ticks) {
   let next = state;
@@ -87,6 +91,17 @@ test("createInitialState accepts an explicit stage for phaser scene boot", () =>
 
   assert.equal(state.stage, 5);
   assert.equal(state.status, "ready");
+});
+
+test("createInitialState applies permanent starting gold and life bonuses", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalStartGold = 2;
+  metaProgress.upgrades.globalMaxLives = 2;
+
+  const state = createInitialState(1, metaProgress);
+
+  assert.equal(state.gold, 160);
+  assert.equal(state.lives, 17);
 });
 
 test("players can place an opening tower before the battle starts", () => {
@@ -185,6 +200,18 @@ test("wisp resists arcane damage but not physical damage", () => {
   const magicDamage = resolveDamageAgainstEnemy(wisp, getTowerStats(createTower("magic", 2, 2)));
 
   assert.ok(magicDamage < attackDamage);
+});
+
+test("getTowerStats applies global and tower-specific meta upgrades", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalDamageBoost = 2;
+  metaProgress.upgrades.attackTowerDamage = 1;
+  metaProgress.upgrades.attackTowerSpeed = 2;
+
+  const stats = getTowerStats(createTower("attack", 2, 2), metaProgress);
+
+  assert.equal(stats.damage, 14.26);
+  assert.equal(stats.cooldown, 6);
 });
 
 test("cannon splash damages clustered enemies", () => {
@@ -295,12 +322,66 @@ test("restart resets state", () => {
   assert.equal(state.status, "ready");
 });
 
+test("restartGame preserves permanent meta bonuses when rebuilding battle state", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalStartGold = 3;
+  metaProgress.upgrades.globalMaxLives = 1;
+
+  const restarted = restartGame(4, metaProgress);
+
+  assert.equal(restarted.stage, 4);
+  assert.equal(restarted.gold, 170);
+  assert.equal(restarted.lives, 16);
+  assert.deepEqual(restarted.metaProgress, createInitialState(4, metaProgress).metaProgress);
+});
+
 test("restartGame can target an explicit stage before battle starts", () => {
   const state = restartGame(4);
 
   assert.equal(state.stage, 4);
   assert.equal(state.status, "ready");
   assert.equal(state.wave, 1);
+});
+
+test("later speed tiers reduce cooldown further for attack and hunter towers", () => {
+  const attackTierOneMeta = createMetaProgress();
+  attackTierOneMeta.upgrades.attackTowerSpeed = 1;
+  const attackTierTwoMeta = createMetaProgress();
+  attackTierTwoMeta.upgrades.attackTowerSpeed = 2;
+  const attackTierThreeMeta = createMetaProgress();
+  attackTierThreeMeta.upgrades.attackTowerSpeed = 3;
+
+  const hunterTierOneMeta = createMetaProgress();
+  hunterTierOneMeta.upgrades.hunterTowerSpeed = 1;
+  const hunterTierTwoMeta = createMetaProgress();
+  hunterTierTwoMeta.upgrades.hunterTowerSpeed = 2;
+  const hunterTierThreeMeta = createMetaProgress();
+  hunterTierThreeMeta.upgrades.hunterTowerSpeed = 3;
+
+  const attackTierOne = getTowerStats(createTower("attack", 2, 2), attackTierOneMeta);
+  const attackTierTwo = getTowerStats(createTower("attack", 2, 2), attackTierTwoMeta);
+  const attackTierThree = getTowerStats(createTower("attack", 2, 2), attackTierThreeMeta);
+  const hunterTierOne = getTowerStats(createTower("hunter", 2, 2), hunterTierOneMeta);
+  const hunterTierTwo = getTowerStats(createTower("hunter", 2, 2), hunterTierTwoMeta);
+  const hunterTierThree = getTowerStats(createTower("hunter", 2, 2), hunterTierThreeMeta);
+
+  assert.equal(attackTierOne.cooldown, 7);
+  assert.equal(attackTierTwo.cooldown, 6);
+  assert.equal(attackTierThree.cooldown, 5);
+  assert.equal(hunterTierOne.cooldown, 5);
+  assert.equal(hunterTierTwo.cooldown, 4);
+  assert.equal(hunterTierThree.cooldown, 3);
+
+  assert.ok(attackTierOne.cooldown > attackTierTwo.cooldown);
+  assert.ok(attackTierTwo.cooldown > attackTierThree.cooldown);
+  assert.ok(hunterTierOne.cooldown > hunterTierTwo.cooldown);
+  assert.ok(hunterTierTwo.cooldown > hunterTierThree.cooldown);
+});
+
+test("reduceCooldown derives discrete reductions from speed bonus values instead of raw speed levels", () => {
+  assert.match(logicSource, /function reduceCooldown\(cooldown,\s*bonus,\s*bonusStep/);
+  assert.match(logicSource, /bonus\s*\/\s*bonusStep/);
+  assert.doesNotMatch(logicSource, /function reduceCooldown\([^)]*speedLevel/);
 });
 
 test("startGame keeps the selected stage when entering battle", () => {
@@ -342,6 +423,25 @@ test("clearing the boss wave moves the campaign to the next stage gate", () => {
   assert.equal(state.stage, 2);
   assert.equal(state.wave, 1);
   assert.equal(state.spawnedInWave, 0);
+});
+
+test("advancing to the next stage removes towers that become road cells", () => {
+  let state = startGame(createInitialState());
+  state.stage = 1;
+  state.wave = 5;
+  state.spawnedInWave = 1;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+  state.towers = [createTower("attack", 1, 4), createTower("slow", 1, 1)];
+
+  state = tickGame(state);
+
+  assert.equal(state.status, "stage-cleared");
+  assert.equal(state.stage, 2);
+  assert.deepEqual(
+    state.towers.map((tower) => ({ type: tower.type, x: tower.x, y: tower.y })),
+    [{ type: "slow", x: 1, y: 1 }],
+  );
 });
 
 test("continueCampaign resumes the next stage after a stage clear", () => {

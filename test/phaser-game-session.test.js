@@ -7,6 +7,8 @@ import {
   createGameSession,
   cycleThemeSelection,
   getCompletedBattleStage,
+  openShop,
+  returnToTitle,
   returnToCampaign,
   returnFromBattleToTheme,
   retryBattle,
@@ -90,6 +92,29 @@ test("returnToCampaign restores the campaign scene without changing the selected
   assert.equal(session.activeStage, null);
   assert.equal(session.selectedTheme, completed.selectedTheme);
   assert.equal(session.selectedStage, 9);
+});
+
+test("openShop switches the session to the shop scene without changing stage selection", () => {
+  const selected = cycleThemeSelection(createGameSession(), 1);
+  const session = openShop({
+    ...selected,
+    activeStage: 4,
+  });
+
+  assert.equal(session.scene, "shop");
+  assert.equal(session.screen, "shop");
+  assert.equal(session.selectedTheme, selected.selectedTheme);
+  assert.equal(session.selectedStage, selected.selectedStage);
+  assert.equal(session.activeStage, null);
+});
+
+test("returnToTitle clears active battle state and restores the title scene", () => {
+  const session = returnToTitle(beginBattleFromSelection(selectStage(createGameSession(), 3)));
+
+  assert.equal(session.scene, "title");
+  assert.equal(session.screen, "title");
+  assert.equal(session.selectedStage, 3);
+  assert.equal(session.activeStage, null);
 });
 
 test("getCompletedBattleStage prefers the active battle stage over the advanced state stage", () => {

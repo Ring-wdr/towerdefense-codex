@@ -7,6 +7,8 @@ import {
   getStageWaveDefinition,
   isStageRoadCell,
 } from "./stages.js";
+import { getMetaBattleModifiers } from "./meta-battle-modifiers.js";
+import { createMetaProgress, normalizeMetaProgress } from "./meta-progress.js";
 
 export const GRID_COLS = 12;
 export const GRID_ROWS = 8;
@@ -116,13 +118,17 @@ export const ENEMY_SPECIES = {
   },
 };
 
-export function createInitialState(stage = 1) {
+export function createInitialState(stage = 1, metaProgress = createMetaProgress()) {
+  const normalizedMetaProgress = normalizeMetaProgress(metaProgress);
+  const metaModifiers = getMetaBattleModifiers(normalizedMetaProgress);
+
   return {
     attackEffects: [],
     cursor: { x: 1, y: 1 },
     enemies: [],
-    gold: 140,
-    lives: 15,
+    gold: 140 + metaModifiers.startGold,
+    lives: 15 + metaModifiers.maxLives,
+    metaProgress: normalizedMetaProgress,
     nextAttackEffectId: 1,
     nextEnemyId: 1,
     nextTowerId: 1,
@@ -204,8 +210,8 @@ export function togglePause(state) {
   return next;
 }
 
-export function restartGame(stage = 1) {
-  return createInitialState(stage);
+export function restartGame(stage = 1, metaProgress = createMetaProgress()) {
+  return createInitialState(stage, metaProgress);
 }
 
 export function selectTowerType(state, towerType) {
@@ -342,11 +348,13 @@ export function getWaveDefinition(stageNumber, waveNumber = null) {
   return getStageWaveDefinition(stageNumber, waveNumber);
 }
 
-export function getTowerStats(tower) {
+export function getTowerStats(tower, metaProgress = createMetaProgress()) {
   const levelBonus = tower.level - 1;
+  let stats;
+
   switch (tower.type) {
     case "attack":
-      return {
+      stats = {
         cooldown: Math.max(4, 8 - levelBonus),
         damage: 12 + levelBonus * 6,
         damageClass: "physical",
@@ -359,8 +367,9 @@ export function getTowerStats(tower) {
         slowFactor: 1,
         slowTicks: 0,
       };
+      break;
     case "slow":
-      return {
+      stats = {
         cooldown: Math.max(5, 10 - levelBonus),
         damage: 5 + levelBonus * 3,
         damageClass: "control",
@@ -376,8 +385,9 @@ export function getTowerStats(tower) {
         slowFactor: Math.max(0.35, 0.62 - levelBonus * 0.07),
         slowTicks: 10 + levelBonus * 3,
       };
+      break;
     case "magic":
-      return {
+      stats = {
         cooldown: Math.max(6, 12 - levelBonus),
         damage: 18 + levelBonus * 8,
         damageClass: "arcane",
@@ -392,8 +402,9 @@ export function getTowerStats(tower) {
         slowFactor: 1,
         slowTicks: 0,
       };
+      break;
     case "cannon":
-      return {
+      stats = {
         cooldown: Math.max(8, 14 - levelBonus),
         damage: 18 + levelBonus * 10,
         damageClass: "siege",
@@ -409,8 +420,9 @@ export function getTowerStats(tower) {
         slowFactor: 1,
         slowTicks: 0,
       };
+      break;
     case "hunter":
-      return {
+      stats = {
         cooldown: Math.max(3, 6 - levelBonus),
         damage: 9 + levelBonus * 4,
         damageClass: "physical",
@@ -426,8 +438,9 @@ export function getTowerStats(tower) {
         slowFactor: 1,
         slowTicks: 0,
       };
+      break;
     default:
-      return {
+      stats = {
         cooldown: 8,
         damage: 0,
         damageClass: "physical",
@@ -440,7 +453,10 @@ export function getTowerStats(tower) {
         slowFactor: 1,
         slowTicks: 0,
       };
+      break;
   }
+
+  return applyMetaBattleBonuses(stats, tower.type, metaProgress);
 }
 
 export function resolveDamageAgainstEnemy(enemy, attack, scale = 1) {
@@ -549,7 +565,7 @@ function runTowers(state) {
       continue;
     }
 
-    const stats = getTowerStats(tower);
+    const stats = getTowerStats(tower, state.metaProgress);
     const targets = selectTargetsForTower(state.enemies, tower, stats);
     if (!targets.length) {
       continue;
@@ -710,6 +726,7 @@ function maybeAdvanceWave(state) {
 
   if (state.stage < getStageCount()) {
     state.stage += 1;
+    state.towers = state.towers.filter((tower) => !isStageRoadCell(state.stage, tower.x, tower.y));
     state.wave = 1;
     state.spawnedInWave = 0;
     state.nextSpawnTick = state.tick + 18;
@@ -735,6 +752,70 @@ function distanceBetweenTowerAndEnemy(tower, enemy) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
+  const modifiers = getMetaBattleModifiers(metaProgress);
+  const stats = {
+    ...baseStats,
+    bonusBySpecies: { ...baseStats.bonusBySpecies },
+  };
+
+  if (stats.damage > 0) {
+    stats.damage = scaleDamage(stats.damage, 1 + modifiers.globalDamageMultiplier);
+  }
+
+  switch (towerType) {
+    case "attack":
+      stats.damage = scaleDamage(stats.damage, 1 + modifiers.attackDamageMultiplier);
+      stats.cooldown = reduceCooldown(
+        stats.cooldown,
+        modifiers.attackSpeedBonus,
+        modifiers.attackSpeedBonusStep,
+      );
+      break;
+    case "slow":
+      stats.slowFactor = clamp(
+        roundToHundredths(stats.slowFactor * (1 - modifiers.slowEffectBonus)),
+        0.1,
+        1,
+      );
+      break;
+    case "magic":
+      stats.damage = scaleDamage(stats.damage, 1 + modifiers.magicDamageMultiplier);
+      break;
+    case "cannon":
+      stats.damage = scaleDamage(stats.damage, 1 + modifiers.cannonDamageMultiplier);
+      break;
+    case "hunter":
+      stats.cooldown = reduceCooldown(
+        stats.cooldown,
+        modifiers.hunterSpeedBonus,
+        modifiers.hunterSpeedBonusStep,
+      );
+      break;
+    default:
+      break;
+  }
+
+  return stats;
+}
+
+function scaleDamage(damage, multiplier) {
+  return roundToHundredths(damage * multiplier);
+}
+
+function reduceCooldown(cooldown, bonus, bonusStep = bonus) {
+  if (bonus <= 0 || bonusStep <= 0) {
+    return cooldown;
+  }
+
+  const reduction = Math.max(1, Math.round(bonus / bonusStep));
+  return Math.max(1, cooldown - reduction);
+}
+
+function roundToHundredths(value) {
+  return Math.round(value * 100) / 100;
 }
 
 function canManageBattlefield(status) {
