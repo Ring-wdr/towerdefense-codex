@@ -726,6 +726,7 @@ function maybeAdvanceWave(state) {
 
   if (state.stage < getStageCount()) {
     state.stage += 1;
+    state.towers = state.towers.filter((tower) => !isStageRoadCell(state.stage, tower.x, tower.y));
     state.wave = 1;
     state.spawnedInWave = 0;
     state.nextSpawnTick = state.tick + 18;
