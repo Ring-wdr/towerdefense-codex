@@ -20,29 +20,62 @@ export function createMetaProgress() {
   };
 }
 
+function normalizeNonNegativeNumber(value) {
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
 export function normalizeMetaProgress(value = {}) {
   const source = value && typeof value === "object" ? value : {};
   const upgradesSource =
     source.upgrades && typeof source.upgrades === "object" ? source.upgrades : {};
+  const upgrades = {};
+
+  for (const key of Object.keys(DEFAULT_META_UPGRADES)) {
+    upgrades[key] = normalizeNonNegativeNumber(upgradesSource[key]);
+  }
 
   return {
     currency: Number.isFinite(source.currency) ? source.currency : 0,
     highestClearedStage: Number.isFinite(source.highestClearedStage)
       ? source.highestClearedStage
       : 0,
-    upgrades: {
-      ...DEFAULT_META_UPGRADES,
-      ...upgradesSource,
-    },
+    upgrades,
   };
 }
 
-export function loadMetaProgress(storage = globalThis.localStorage) {
-  if (!storage || typeof storage.getItem !== "function") {
+function getSafeLocalStorage() {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStorageValue(storage, key) {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorageValue(storage, key, value) {
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function loadMetaProgress(storage) {
+  const resolvedStorage = storage ?? getSafeLocalStorage();
+
+  if (!resolvedStorage || typeof resolvedStorage.getItem !== "function") {
     return createMetaProgress();
   }
 
-  const rawValue = storage.getItem(META_PROGRESS_STORAGE_KEY);
+  const rawValue = readStorageValue(resolvedStorage, META_PROGRESS_STORAGE_KEY);
   if (!rawValue) {
     return createMetaProgress();
   }
@@ -54,16 +87,21 @@ export function loadMetaProgress(storage = globalThis.localStorage) {
   }
 }
 
-export function saveMetaProgress(progress, storage = globalThis.localStorage) {
+export function saveMetaProgress(progress, storage) {
   const normalized = normalizeMetaProgress(progress);
+  const resolvedStorage = storage ?? getSafeLocalStorage();
 
-  if (!storage || typeof storage.setItem !== "function") {
+  if (!resolvedStorage || typeof resolvedStorage.setItem !== "function") {
     return normalized;
   }
 
-  try {
-    storage.setItem(META_PROGRESS_STORAGE_KEY, JSON.stringify(normalized));
-  } catch {
+  const persisted = writeStorageValue(
+    resolvedStorage,
+    META_PROGRESS_STORAGE_KEY,
+    JSON.stringify(normalized),
+  );
+
+  if (!persisted) {
     return normalized;
   }
 

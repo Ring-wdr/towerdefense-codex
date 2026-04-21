@@ -54,6 +54,42 @@ test("normalizeMetaProgress fills in missing upgrade keys without dropping store
   );
 });
 
+test("normalizeMetaProgress coerces malformed upgrade values and ignores unknown keys", () => {
+  assert.deepEqual(
+    normalizeMetaProgress({
+      currency: "12",
+      highestClearedStage: Infinity,
+      upgrades: {
+        globalStartGold: "7",
+        globalMaxLives: -3,
+        globalDamageBoost: NaN,
+        attackTowerDamage: "invalid",
+        attackTowerSpeed: 1.5,
+        slowTowerEffect: null,
+        magicTowerDamage: undefined,
+        cannonTowerDamage: 9,
+        hunterTowerSpeed: "4",
+        bonusGold: 99,
+      },
+    }),
+    {
+      currency: 0,
+      highestClearedStage: 0,
+      upgrades: {
+        globalStartGold: 0,
+        globalMaxLives: 0,
+        globalDamageBoost: 0,
+        attackTowerDamage: 0,
+        attackTowerSpeed: 1.5,
+        slowTowerEffect: 0,
+        magicTowerDamage: 0,
+        cannonTowerDamage: 9,
+        hunterTowerSpeed: 0,
+      },
+    },
+  );
+});
+
 test("saveMetaProgress persists normalized JSON and loadMetaProgress restores it", () => {
   const writes = new Map();
   const storage = {
@@ -107,4 +143,59 @@ test("loadMetaProgress falls back to defaults when storage contains invalid JSON
   };
 
   assert.deepEqual(loadMetaProgress(storage), createMetaProgress());
+});
+
+test("loadMetaProgress falls back when localStorage access or read throws", () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+
+  try {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get() {
+        throw new Error("blocked");
+      },
+    });
+
+    assert.deepEqual(loadMetaProgress(), createMetaProgress());
+    assert.deepEqual(
+      loadMetaProgress({
+        getItem() {
+          throw new Error("blocked");
+        },
+      }),
+      createMetaProgress(),
+    );
+  } finally {
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, "localStorage", originalDescriptor);
+    }
+  }
+});
+
+test("saveMetaProgress falls back when localStorage access or write throws", () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const progress = createMetaProgress();
+
+  try {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get() {
+        throw new Error("blocked");
+      },
+    });
+
+    assert.deepEqual(saveMetaProgress(progress), progress);
+    assert.deepEqual(
+      saveMetaProgress(progress, {
+        setItem() {
+          throw new Error("blocked");
+        },
+      }),
+      progress,
+    );
+  } finally {
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, "localStorage", originalDescriptor);
+    }
+  }
 });
