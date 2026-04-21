@@ -1045,12 +1045,49 @@ button:disabled {
   }
 
   .control-dock {
-    padding: 10px;
-    border-radius: 18px;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px) + var(--browser-safe-bottom));
+    gap: 6px;
+    padding: 8px 8px 9px;
+    border-radius: 16px;
+  }
+
+  .control-dock .dock-label {
+    display: none;
+  }
+
+  .control-dock .dock-selection-summary {
+    margin-bottom: 2px;
+    font-size: 0.82rem;
+    line-height: 1.1;
   }
 
   .tower-grid--dock {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .control-dock .tower-choice {
+    min-height: 58px;
+    padding: 4px 3px;
+  }
+
+  .control-dock .tower-choice__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .control-dock .tower-choice__icon img {
+    width: 22px;
+    height: 22px;
+  }
+
+  .control-dock .dock-pad button,
+  .control-dock .dock-actions button {
+    min-height: 32px;
+    border-radius: 10px;
+    font-size: 0.8rem;
   }
 }
 

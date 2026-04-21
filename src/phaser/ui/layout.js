@@ -28,13 +28,22 @@ export function getBattleViewportLayout(scene, boardWidth, boardHeight, options 
   const width = scene.scale.width;
   const height = scene.scale.height;
   const safeBottomInset = normalizeInset(options.safeBottomInset);
-  const horizontalPadding = options.horizontalPadding ?? Math.max(12, Math.round(width * 0.06));
-  const topPadding = options.topPadding ?? Math.max(72, Math.round(height * 0.13));
+  const requestedHorizontalPadding = options.horizontalPadding ?? Math.max(12, Math.round(width * 0.06));
+  const requestedTopPadding = options.topPadding ?? Math.max(72, Math.round(height * 0.13));
   const baseBottomPadding = options.bottomPadding ?? Math.max(20, Math.round(height * 0.04));
   const dockBreakpoint = options.dockBreakpoint ?? 0;
   const forceBottomDock = options.forceBottomDock ?? false;
   const compactDockBreakpoint = options.compactDockBreakpoint ?? 680;
   const usesBottomDock = forceBottomDock || (dockBreakpoint > 0 && width <= dockBreakpoint);
+  const compactDockViewport = usesBottomDock && width <= compactDockBreakpoint;
+  const compactHorizontalPadding = Math.max(8, Math.round(width * 0.025));
+  const horizontalPadding = compactDockViewport
+    ? Math.min(requestedHorizontalPadding, compactHorizontalPadding)
+    : requestedHorizontalPadding;
+  const compactTopPadding = Math.max(72, Math.round(height * 0.09));
+  const topPadding = compactDockViewport
+    ? Math.min(requestedTopPadding, compactTopPadding)
+    : requestedTopPadding;
   const dockBottomPadding = width <= compactDockBreakpoint
     ? (options.compactDockBottomPadding ?? options.dockBottomPadding ?? 232)
     : (options.dockBottomPadding ?? 220);

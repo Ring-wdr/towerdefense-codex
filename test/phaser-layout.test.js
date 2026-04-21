@@ -161,3 +161,18 @@ test("getBattleViewportLayout adds safe bottom inset on top of dock padding", ()
   assert.equal(layout.bottomPadding, 256);
   assert.ok(layout.boardBottom <= 844 - 256);
 });
+
+test("getBattleViewportLayout lets the battle board breathe on narrow docked phones", () => {
+  const layout = layoutModule.getBattleViewportLayout(createScene(390, 844), 720, 480, {
+    topPadding: 92,
+    bottomPadding: 24,
+    forceBottomDock: true,
+    dockBottomPadding: 220,
+    compactDockBottomPadding: 220,
+  });
+
+  assert.equal(layout.horizontalPadding, 10);
+  assert.equal(layout.boardLeft, 10);
+  assert.equal(layout.boardTop, 76);
+  assert.equal(layout.boardWidth, 370);
+});

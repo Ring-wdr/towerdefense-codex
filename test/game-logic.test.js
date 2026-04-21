@@ -144,10 +144,13 @@ test("deleting a tower removes it from the selected grid", () => {
   let state = startGame(createInitialState());
   state = moveCursor(state, 1, 0);
   state = buildTowerAtCursor(state);
+  state = upgradeTowerAtCursor(state);
+  const goldBeforeDelete = state.gold;
 
   state = deleteTowerAtCursor(state);
 
   assert.equal(state.towers.length, 0);
+  assert.equal(state.gold, goldBeforeDelete + 39);
   assert.equal(canBuildTower(state, 2, 1, "attack"), true);
 });
 

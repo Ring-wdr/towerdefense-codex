@@ -260,6 +260,15 @@ test("battle scene opens on a ready state and exposes a start button for entry a
   assert.match(battleSceneSource, /this\.controls\.startButton\.textContent/);
 });
 
+test("battle scene lets s start the next wave from keyboard during ready states", () => {
+  const handleKeyDownBody = extractMethodBody(battleSceneSource, "handleKeyDown");
+
+  assert.ok(handleKeyDownBody);
+  assert.match(handleKeyDownBody, /case "s":/);
+  assert.match(handleKeyDownBody, /case "S":/);
+  assert.match(handleKeyDownBody, /this\.applyState\(startGame\(this\.state\)\);/);
+});
+
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
@@ -315,6 +324,13 @@ test("battle scene keeps the hud compact and biases the field upward", () => {
   assert.match(battleSceneSource, /this\.hudText\.setText\(\s*\[/);
   assert.doesNotMatch(battleSceneSource, /`Status \$\{this\.state\.status\}`/);
   assert.doesNotMatch(battleSceneSource, /this\.helpText\.setText\(/);
+});
+
+test("battle hud uses symbol labels for lives and gold", () => {
+  assert.match(battleSceneSource, /♥ \$\{this\.state\.lives\}/);
+  assert.match(battleSceneSource, /💰 \$\{this\.state\.gold\}/);
+  assert.doesNotMatch(battleSceneSource, /Lives \$\{this\.state\.lives\}/);
+  assert.doesNotMatch(battleSceneSource, /Gold \$\{this\.state\.gold\}/);
 });
 
 test("battle scene measures the dock height before sizing tablet battle view", () => {

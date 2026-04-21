@@ -283,11 +283,13 @@ export function deleteTowerAtCursor(state) {
     return state;
   }
 
-  if (!findTowerAt(state, state.cursor.x, state.cursor.y)) {
+  const tower = findTowerAt(state, state.cursor.x, state.cursor.y);
+  if (!tower) {
     return state;
   }
 
   const next = structuredClone(state);
+  next.gold += getTowerRefund(tower);
   next.towers = next.towers.filter(
     (tower) => !(tower.x === next.cursor.x && tower.y === next.cursor.y),
   );
@@ -320,6 +322,16 @@ export function isRoadCell(x, y, stage = 1) {
 
 export function getUpgradeCost(tower) {
   return Math.round(TOWER_TYPES[tower.type].cost * (0.7 + tower.level * 0.25));
+}
+
+function getTowerRefund(tower) {
+  let investedGold = TOWER_TYPES[tower.type].cost;
+
+  for (let level = 1; level < tower.level; level += 1) {
+    investedGold += getUpgradeCost({ ...tower, level });
+  }
+
+  return Math.floor(investedGold * 0.5);
 }
 
 export function getWaveDefinition(stageNumber, waveNumber = null) {

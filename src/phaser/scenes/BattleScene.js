@@ -569,6 +569,12 @@ export class BattleScene extends Phaser.Scene {
       case " ":
         this.applyState(togglePause(this.state));
         break;
+      case "s":
+      case "S":
+        if (["ready", "intermission"].includes(this.state.status)) {
+          this.applyState(startGame(this.state));
+        }
+        break;
       case "r":
       case "R":
         this.restartBattle();
@@ -1061,7 +1067,7 @@ export class BattleScene extends Phaser.Scene {
         : "Cannot deploy here";
 
     this.hudText.setText([
-      `Stage ${this.state.stage}  Wave ${this.state.wave}  Lives ${this.state.lives}  Gold ${this.state.gold}`,
+      `Stage ${this.state.stage}  Wave ${this.state.wave}  ♥ ${this.state.lives}  💰 ${this.state.gold}`,
       `Tower ${selectedTower.name}  Cursor ${this.state.cursor.x},${this.state.cursor.y}  ${actionHint}`,
     ]);
 
