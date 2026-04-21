@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { createMetaProgress } from "../src/game/meta-progress.js";
 import {
   buildTowerAtCursor,
   canBuildTower,
@@ -87,6 +88,17 @@ test("createInitialState accepts an explicit stage for phaser scene boot", () =>
 
   assert.equal(state.stage, 5);
   assert.equal(state.status, "ready");
+});
+
+test("createInitialState applies permanent starting gold and life bonuses", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalStartGold = 2;
+  metaProgress.upgrades.globalMaxLives = 2;
+
+  const state = createInitialState(1, metaProgress);
+
+  assert.equal(state.gold, 160);
+  assert.equal(state.lives, 17);
 });
 
 test("players can place an opening tower before the battle starts", () => {
@@ -185,6 +197,18 @@ test("wisp resists arcane damage but not physical damage", () => {
   const magicDamage = resolveDamageAgainstEnemy(wisp, getTowerStats(createTower("magic", 2, 2)));
 
   assert.ok(magicDamage < attackDamage);
+});
+
+test("getTowerStats applies global and tower-specific meta upgrades", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalDamageBoost = 2;
+  metaProgress.upgrades.attackTowerDamage = 1;
+  metaProgress.upgrades.attackTowerSpeed = 2;
+
+  const stats = getTowerStats(createTower("attack", 2, 2), metaProgress);
+
+  assert.equal(stats.damage, 14.26);
+  assert.equal(stats.cooldown, 7);
 });
 
 test("cannon splash damages clustered enemies", () => {
