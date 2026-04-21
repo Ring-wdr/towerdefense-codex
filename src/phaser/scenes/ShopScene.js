@@ -1,5 +1,9 @@
 import * as Phaser from "phaser";
-import { loadMetaProgress, saveMetaProgress } from "../../game/meta-progress.js";
+import {
+  loadMetaProgress,
+  normalizeMetaProgress,
+  saveMetaProgress,
+} from "../../game/meta-progress.js";
 import { canPurchaseUpgrade, META_SHOP_CATALOG, purchaseUpgrade } from "../../game/meta-shop.js";
 import { createGameSession, returnToTitle } from "../state/game-session.js";
 import {
@@ -29,8 +33,36 @@ function hideBattleControls() {
   }
 }
 
-function getUpgradeSummary(metaProgress, upgrade) {
-  const currentLevel = metaProgress.upgrades[upgrade.id] ?? 0;
+function clampRenderableUpgradeLevel(value, maxLevel) {
+  const upperBound = Math.max(maxLevel - 1, 0);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  const integerValue = Math.trunc(value);
+
+  if (!Number.isInteger(value)) {
+    return Math.min(Math.max(integerValue, 0), upperBound);
+  }
+
+  if (integerValue < 0) {
+    return 0;
+  }
+
+  if (integerValue > maxLevel) {
+    return upperBound;
+  }
+
+  return integerValue;
+}
+
+export function getShopEntryState(metaProgress, upgrade) {
+  const normalizedProgress = normalizeMetaProgress(metaProgress);
+  const currentLevel = clampRenderableUpgradeLevel(
+    normalizedProgress.upgrades[upgrade.id] ?? 0,
+    upgrade.maxLevel,
+  );
   const nextLevel = upgrade.levels[currentLevel] ?? null;
 
   if (!nextLevel) {
@@ -38,21 +70,40 @@ function getUpgradeSummary(metaProgress, upgrade) {
       currentLevel,
       buttonLabel: "Maxed",
       detailLabel: "All tiers acquired",
+      isPurchaseEnabled: false,
     };
   }
 
-  if (metaProgress.highestClearedStage < nextLevel.unlockStage) {
+  if (normalizedProgress.highestClearedStage < nextLevel.unlockStage) {
     return {
       currentLevel,
       buttonLabel: `S${nextLevel.unlockStage}`,
       detailLabel: `Unlock Stage ${nextLevel.unlockStage}`,
+      isPurchaseEnabled: false,
+    };
+  }
+
+  const isPurchaseEnabled = canPurchaseUpgrade(normalizedProgress, upgrade.id);
+
+  return {
+    currentLevel,
+    buttonLabel: isPurchaseEnabled ? "Buy" : `${nextLevel.price}G`,
+    detailLabel: `Cost ${nextLevel.price}G`,
+    isPurchaseEnabled,
+  };
+}
+
+export function resolveShopPurchase(metaProgress, upgradeId) {
+  if (!canPurchaseUpgrade(metaProgress, upgradeId)) {
+    return {
+      didPurchase: false,
+      nextProgress: metaProgress,
     };
   }
 
   return {
-    currentLevel,
-    buttonLabel: canPurchaseUpgrade(metaProgress, upgrade.id) ? "Buy" : `${nextLevel.price}G`,
-    detailLabel: `Cost ${nextLevel.price}G`,
+    didPurchase: true,
+    nextProgress: purchaseUpgrade(metaProgress, upgradeId),
   };
 }
 
@@ -81,7 +132,7 @@ export class ShopScene extends Phaser.Scene {
     const layout = getSceneLayout(this, {
       safeBottomInset: getBrowserSafeBottomInset(),
     });
-    const metaProgress = getMetaProgress(this);
+    const metaProgress = normalizeMetaProgress(getMetaProgress(this));
     createBackdrop(this, layout, { fillTop: 0x14201b, fillBottom: 0x09110d, accent: 0xd6ae72 });
 
     const lockup = createTitleLockup(
@@ -135,7 +186,7 @@ export class ShopScene extends Phaser.Scene {
       const row = Math.floor(index / columns);
       const x = cardLeft + column * (cardWidth + gapX);
       const y = gridTop + row * (cardHeight + gapY);
-      const summary = getUpgradeSummary(metaProgress, upgrade);
+      const summary = getShopEntryState(metaProgress, upgrade);
 
       createPanel(this, x, y, cardWidth, cardHeight, {
         fill: upgrade.category === "global" ? 0x211912 : 0x16231c,
@@ -178,14 +229,19 @@ export class ShopScene extends Phaser.Scene {
         layout.isMobile ? 28 : 32,
         summary.buttonLabel,
         () => {
-          const nextProgress = purchaseUpgrade(getMetaProgress(this), upgrade.id);
-          const savedProgress = saveMetaProgress(nextProgress);
+          const purchase = resolveShopPurchase(getMetaProgress(this), upgrade.id);
+
+          if (!purchase.didPurchase) {
+            return;
+          }
+
+          const savedProgress = saveMetaProgress(purchase.nextProgress);
           this.game.registry.set("metaProgress", savedProgress);
           this.scene.restart();
         },
         {
-          backgroundColor: canPurchaseUpgrade(metaProgress, upgrade.id) ? 0xb47b3c : 0x304039,
-          strokeColor: canPurchaseUpgrade(metaProgress, upgrade.id) ? 0xf0d3a1 : 0x7f987d,
+          backgroundColor: summary.isPurchaseEnabled ? 0xb47b3c : 0x304039,
+          strokeColor: summary.isPurchaseEnabled ? 0xf0d3a1 : 0x7f987d,
           fontSize: layout.isMobile ? 14 : 16,
         },
       );
