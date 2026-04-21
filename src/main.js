@@ -57,10 +57,28 @@ function bindBrowserSafeBottomInset() {
   window.addEventListener("resize", sync);
 }
 
+function bindDoubleTapZoomGuard() {
+  let lastTouchEndAt = 0;
+
+  document.addEventListener("touchend", (event) => {
+    if (event.touches.length > 0 || event.changedTouches.length > 1) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastTouchEndAt <= 300) {
+      event.preventDefault();
+    }
+
+    lastTouchEndAt = now;
+  }, { passive: false });
+}
+
 async function startApplication() {
   hydrateTowerIcons();
   hydrateControlIcons();
   bindBrowserSafeBottomInset();
+  bindDoubleTapZoomGuard();
 
   const { default: startGame } = await import("./game/main.js");
   return startGame("game-root");

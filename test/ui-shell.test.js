@@ -253,6 +253,13 @@ test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(gameMainSource, /createGame\(mountNode\)/);
 });
 
+test("main entry guards against iOS double-tap zoom in the app shell", () => {
+  assert.match(mainSource, /addEventListener\("touchend"/);
+  assert.match(mainSource, /passive:\s*false/);
+  assert.match(mainSource, /event\.preventDefault\(\)/);
+  assert.match(mainSource, /Date\.now\(\)/);
+});
+
 test("battle scene opens on a ready state and exposes a start button for entry and breaks", () => {
   assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
   assert.match(battleSceneSource, /this\.state\s*=\s*createInitialState\(stage\);/);
