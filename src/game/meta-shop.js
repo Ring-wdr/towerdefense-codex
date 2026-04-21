@@ -115,6 +115,30 @@ const META_SHOP_CATALOG_BY_ID = new Map(
   META_SHOP_CATALOG.map((upgrade) => [upgrade.id, upgrade]),
 );
 
+function clampUpgradeLevelForIndex(value, maxLevel) {
+  const upperBound = Math.max(maxLevel - 1, 0);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  const integerValue = Math.trunc(value);
+
+  if (!Number.isInteger(value)) {
+    return Math.min(Math.max(integerValue, 0), upperBound);
+  }
+
+  if (integerValue < 0) {
+    return 0;
+  }
+
+  if (integerValue > maxLevel) {
+    return upperBound;
+  }
+
+  return integerValue;
+}
+
 export function getMetaRewardForStage(stageNumber) {
   return 20 + stageNumber * 15;
 }
@@ -127,7 +151,10 @@ export function canPurchaseUpgrade(progress, upgradeId) {
     return false;
   }
 
-  const currentLevel = normalized.upgrades[upgradeId] ?? 0;
+  const currentLevel = clampUpgradeLevelForIndex(
+    normalized.upgrades[upgradeId] ?? 0,
+    definition.maxLevel,
+  );
   const nextLevel = definition.levels[currentLevel];
 
   if (!nextLevel) {
@@ -147,7 +174,10 @@ export function purchaseUpgrade(progress, upgradeId) {
 
   const normalized = normalizeMetaProgress(progress);
   const definition = META_SHOP_CATALOG_BY_ID.get(upgradeId);
-  const currentLevel = normalized.upgrades[upgradeId] ?? 0;
+  const currentLevel = clampUpgradeLevelForIndex(
+    normalized.upgrades[upgradeId] ?? 0,
+    definition.maxLevel,
+  );
   const nextLevel = definition.levels[currentLevel];
 
   return {
