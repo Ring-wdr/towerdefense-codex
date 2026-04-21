@@ -809,10 +809,7 @@ function reduceCooldown(cooldown, bonus, speedLevel = 0) {
     return cooldown;
   }
 
-  const baselineCooldown = Math.floor(cooldown * (1 - bonus));
-  const extraReduction = Math.floor((speedLevel - 1) / 2);
-
-  return Math.max(1, baselineCooldown - extraReduction);
+  return Math.max(1, cooldown - speedLevel);
 }
 
 function roundToHundredths(value) {

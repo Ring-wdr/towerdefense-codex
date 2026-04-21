@@ -177,8 +177,9 @@ export class BattleScene extends Phaser.Scene {
     const sessionStage = getSession(this).activeStage;
     const stage = data.stage ?? sessionStage ?? 1;
     const nextSession = beginBattleFromSelection(selectStage(getSession(this), stage));
+    const metaProgress = this.game.registry.get("metaProgress");
 
-    this.state = createInitialState(stage);
+    this.state = createInitialState(stage, metaProgress);
     this.lastTickAt = 0;
     this.game.registry.set("session", nextSession);
 

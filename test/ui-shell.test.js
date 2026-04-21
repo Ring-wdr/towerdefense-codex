@@ -262,9 +262,17 @@ test("main entry guards against iOS double-tap zoom in the app shell", () => {
 
 test("battle scene opens on a ready state and exposes a start button for entry and breaks", () => {
   assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
-  assert.match(battleSceneSource, /this\.state\s*=\s*createInitialState\(stage\);/);
+  assert.match(battleSceneSource, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
+  assert.match(battleSceneSource, /this\.state\s*=\s*createInitialState\(stage,\s*metaProgress\);/);
   assert.doesNotMatch(battleSceneSource, /this\.state\s*=\s*startGame\(createInitialState\(stage\)\);/);
   assert.match(battleSceneSource, /this\.controls\.startButton\.textContent/);
+});
+
+test("battle scene boot reads permanent progression from the registry before building state", () => {
+  assert.match(
+    battleSceneSource,
+    /create\(data = \{\}\)\s*\{[\s\S]*const metaProgress = this\.game\.registry\.get\("metaProgress"\);[\s\S]*this\.state = createInitialState\(stage,\s*metaProgress\);/,
+  );
 });
 
 test("battle scene lets s start the next wave from keyboard during ready states", () => {

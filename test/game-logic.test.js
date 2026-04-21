@@ -208,7 +208,7 @@ test("getTowerStats applies global and tower-specific meta upgrades", () => {
   const stats = getTowerStats(createTower("attack", 2, 2), metaProgress);
 
   assert.equal(stats.damage, 14.26);
-  assert.equal(stats.cooldown, 7);
+  assert.equal(stats.cooldown, 6);
 });
 
 test("cannon splash damages clustered enemies", () => {
@@ -341,25 +341,38 @@ test("restartGame can target an explicit stage before battle starts", () => {
 });
 
 test("later speed tiers reduce cooldown further for attack and hunter towers", () => {
+  const attackTierOneMeta = createMetaProgress();
+  attackTierOneMeta.upgrades.attackTowerSpeed = 1;
   const attackTierTwoMeta = createMetaProgress();
   attackTierTwoMeta.upgrades.attackTowerSpeed = 2;
   const attackTierThreeMeta = createMetaProgress();
   attackTierThreeMeta.upgrades.attackTowerSpeed = 3;
 
+  const hunterTierOneMeta = createMetaProgress();
+  hunterTierOneMeta.upgrades.hunterTowerSpeed = 1;
   const hunterTierTwoMeta = createMetaProgress();
   hunterTierTwoMeta.upgrades.hunterTowerSpeed = 2;
   const hunterTierThreeMeta = createMetaProgress();
   hunterTierThreeMeta.upgrades.hunterTowerSpeed = 3;
 
+  const attackTierOne = getTowerStats(createTower("attack", 2, 2), attackTierOneMeta);
   const attackTierTwo = getTowerStats(createTower("attack", 2, 2), attackTierTwoMeta);
   const attackTierThree = getTowerStats(createTower("attack", 2, 2), attackTierThreeMeta);
+  const hunterTierOne = getTowerStats(createTower("hunter", 2, 2), hunterTierOneMeta);
   const hunterTierTwo = getTowerStats(createTower("hunter", 2, 2), hunterTierTwoMeta);
   const hunterTierThree = getTowerStats(createTower("hunter", 2, 2), hunterTierThreeMeta);
 
-  assert.equal(attackTierTwo.cooldown, 7);
-  assert.equal(attackTierThree.cooldown, 6);
-  assert.equal(hunterTierTwo.cooldown, 5);
-  assert.equal(hunterTierThree.cooldown, 4);
+  assert.equal(attackTierOne.cooldown, 7);
+  assert.equal(attackTierTwo.cooldown, 6);
+  assert.equal(attackTierThree.cooldown, 5);
+  assert.equal(hunterTierOne.cooldown, 5);
+  assert.equal(hunterTierTwo.cooldown, 4);
+  assert.equal(hunterTierThree.cooldown, 3);
+
+  assert.ok(attackTierOne.cooldown > attackTierTwo.cooldown);
+  assert.ok(attackTierTwo.cooldown > attackTierThree.cooldown);
+  assert.ok(hunterTierOne.cooldown > hunterTierTwo.cooldown);
+  assert.ok(hunterTierTwo.cooldown > hunterTierThree.cooldown);
 });
 
 test("startGame keeps the selected stage when entering battle", () => {
