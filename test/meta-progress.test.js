@@ -8,6 +8,15 @@ import {
   saveMetaProgress,
 } from "../src/game/meta-progress.js";
 
+function restoreLocalStorage(originalDescriptor) {
+  if (originalDescriptor) {
+    Object.defineProperty(globalThis, "localStorage", originalDescriptor);
+    return;
+  }
+
+  delete globalThis.localStorage;
+}
+
 test("createMetaProgress returns the default permanent progression state", () => {
   assert.deepEqual(createMetaProgress(), {
     currency: 0,
@@ -166,9 +175,7 @@ test("loadMetaProgress falls back when localStorage access or read throws", () =
       createMetaProgress(),
     );
   } finally {
-    if (originalDescriptor) {
-      Object.defineProperty(globalThis, "localStorage", originalDescriptor);
-    }
+    restoreLocalStorage(originalDescriptor);
   }
 });
 
@@ -194,8 +201,34 @@ test("saveMetaProgress falls back when localStorage access or write throws", () 
       progress,
     );
   } finally {
-    if (originalDescriptor) {
-      Object.defineProperty(globalThis, "localStorage", originalDescriptor);
-    }
+    restoreLocalStorage(originalDescriptor);
+  }
+});
+
+test("restoreLocalStorage deletes a temporary localStorage getter when there was no original descriptor", () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+
+  try {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get() {
+        return {
+          getItem() {
+            return null;
+          },
+        };
+      },
+    });
+  } finally {
+    restoreLocalStorage(originalDescriptor);
+  }
+
+  if (originalDescriptor) {
+    assert.deepEqual(
+      Object.getOwnPropertyDescriptor(globalThis, "localStorage"),
+      originalDescriptor,
+    );
+  } else {
+    assert.equal(Object.hasOwn(globalThis, "localStorage"), false);
   }
 });
