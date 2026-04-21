@@ -307,6 +307,29 @@ test("battle scene restart preserves permanent progression when rebuilding state
   assert.match(restartBattleBody, /this\.renderScene\(\);/);
 });
 
+test("battle scene persists stage clear rewards through storage before session completion", () => {
+  const persistStageClearRewardsBody = extractMethodBody(battleSceneSource, "persistStageClearRewards");
+  const handleStatusTransitionBody = extractMethodBody(battleSceneSource, "handleStatusTransition");
+
+  assert.ok(persistStageClearRewardsBody);
+  assert.ok(handleStatusTransitionBody);
+  assert.match(battleSceneSource, /awardStageClearRewards/);
+  assert.match(battleSceneSource, /saveMetaProgress/);
+  assert.match(battleSceneSource, /persistStageClearRewards\(stageNumber\)/);
+  assert.match(persistStageClearRewardsBody, /this\.game\.registry\.get\("metaProgress"\)\s*\?\?\s*loadMetaProgress\(\)/);
+  assert.match(persistStageClearRewardsBody, /awardStageClearRewards\(metaProgress,\s*stageNumber\)/);
+  assert.match(persistStageClearRewardsBody, /saveMetaProgress\(nextMetaProgress\)/);
+  assert.match(persistStageClearRewardsBody, /this\.game\.registry\.set\("metaProgress",\s*savedProgress\)/);
+  assert.match(
+    handleStatusTransitionBody,
+    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
+  );
+  assert.match(
+    handleStatusTransitionBody,
+    /if \(this\.state\.status === "victory"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
+  );
+});
+
 test("battle scene lets s start the next wave from keyboard during ready states", () => {
   const handleKeyDownBody = extractMethodBody(battleSceneSource, "handleKeyDown");
 

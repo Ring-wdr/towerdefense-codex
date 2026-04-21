@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  awardStageClearRewards,
   canPurchaseUpgrade,
   META_SHOP_CATALOG,
   getMetaRewardForStage,
@@ -219,6 +220,53 @@ test("purchaseUpgrade returns the original progress when a tier is locked or max
     highestClearedStage: 9,
     upgrades: {
       globalStartGold: 3,
+      globalMaxLives: 0,
+      globalDamageBoost: 0,
+      attackTowerDamage: 0,
+      attackTowerSpeed: 0,
+      slowTowerEffect: 0,
+      magicTowerDamage: 0,
+      cannonTowerDamage: 0,
+      hunterTowerSpeed: 0,
+    },
+  });
+});
+
+test("awardStageClearRewards adds stage currency and only raises highestClearedStage for a new furthest clear", () => {
+  const progressed = awardStageClearRewards(
+    {
+      currency: 55,
+      highestClearedStage: 2,
+      upgrades: {
+        globalStartGold: 1,
+      },
+    },
+    4,
+  );
+
+  assert.deepEqual(progressed, {
+    currency: 55 + getMetaRewardForStage(4),
+    highestClearedStage: 4,
+    upgrades: {
+      globalStartGold: 1,
+      globalMaxLives: 0,
+      globalDamageBoost: 0,
+      attackTowerDamage: 0,
+      attackTowerSpeed: 0,
+      slowTowerEffect: 0,
+      magicTowerDamage: 0,
+      cannonTowerDamage: 0,
+      hunterTowerSpeed: 0,
+    },
+  });
+
+  const repeated = awardStageClearRewards(progressed, 3);
+
+  assert.deepEqual(repeated, {
+    currency: 55 + getMetaRewardForStage(4) + getMetaRewardForStage(3),
+    highestClearedStage: 4,
+    upgrades: {
+      globalStartGold: 1,
       globalMaxLives: 0,
       globalDamageBoost: 0,
       attackTowerDamage: 0,

@@ -143,6 +143,16 @@ export function getMetaRewardForStage(stageNumber) {
   return 20 + stageNumber * 15;
 }
 
+export function awardStageClearRewards(progress, stageNumber) {
+  const normalized = normalizeMetaProgress(progress);
+
+  return {
+    ...normalized,
+    currency: normalized.currency + getMetaRewardForStage(stageNumber),
+    highestClearedStage: Math.max(normalized.highestClearedStage, stageNumber),
+  };
+}
+
 export function canPurchaseUpgrade(progress, upgradeId) {
   const normalized = normalizeMetaProgress(progress);
   const definition = META_SHOP_CATALOG_BY_ID.get(upgradeId);

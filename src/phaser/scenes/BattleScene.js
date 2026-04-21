@@ -48,6 +48,8 @@ import {
   returnFromBattleToTheme,
   selectStage,
 } from "../state/game-session.js";
+import { loadMetaProgress, saveMetaProgress } from "../../game/meta-progress.js";
+import { awardStageClearRewards } from "../../game/meta-shop.js";
 import {
   BATTLE_PARTICLE_TEXTURE_KEY,
   buildAttackParticleBursts,
@@ -421,6 +423,20 @@ export class BattleScene extends Phaser.Scene {
     this.renderScene();
   }
 
+  persistStageClearRewards(stageNumber) {
+    const metaProgress = this.game.registry.get("metaProgress") ?? loadMetaProgress();
+    const nextMetaProgress = awardStageClearRewards(metaProgress, stageNumber);
+    const savedProgress = saveMetaProgress(nextMetaProgress);
+
+    this.game.registry.set("metaProgress", savedProgress);
+    this.state = {
+      ...this.state,
+      metaProgress: savedProgress,
+    };
+
+    return savedProgress;
+  }
+
   createAttackParticles() {
     ensureBattleParticleTexture(this);
     this.destroyAttackParticles();
@@ -616,6 +632,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.state.status === "stage-cleared") {
       const session = getSession(this);
       const completedStage = getCompletedBattleStage(session, this.state);
+      this.persistStageClearRewards(completedStage);
       const progressedSession = completeBattleStage(session, completedStage);
       const nextSession = beginBattleFromSelection(progressedSession);
       this.game.registry.set("session", nextSession);
@@ -627,6 +644,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.state.status === "victory") {
       const session = getSession(this);
       const completedStage = getCompletedBattleStage(session, this.state);
+      this.persistStageClearRewards(completedStage);
       const nextSession = completeBattleStage(session, completedStage);
       this.game.registry.set("session", nextSession);
       this.setBattleControlsVisible(false);
