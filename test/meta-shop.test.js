@@ -14,12 +14,126 @@ test("stage rewards scale upward with later clears", () => {
   assert.equal(getMetaRewardForStage(4), 80);
   assert.equal(getMetaRewardForStage(9), 155);
 
-  assert.equal(META_SHOP_CATALOG.length, 9);
-  for (const item of META_SHOP_CATALOG) {
-    assert.equal(typeof item.category, "string");
-    assert.equal(typeof item.label, "string");
-    assert.equal(item.levels.length, item.maxLevel);
-  }
+  assert.deepEqual(
+    META_SHOP_CATALOG.map(({ id, category, label, description, maxLevel, levels }) => ({
+      id,
+      category,
+      label,
+      description,
+      maxLevel,
+      levels,
+    })),
+    [
+      {
+        id: "globalStartGold",
+        category: "global",
+        label: "보급 확장",
+        description: "전투 시작 골드를 늘린다.",
+        maxLevel: 3,
+        levels: [
+          { price: 60, value: 10, unlockStage: 1 },
+          { price: 120, value: 20, unlockStage: 3 },
+          { price: 210, value: 30, unlockStage: 5 },
+        ],
+      },
+      {
+        id: "globalMaxLives",
+        category: "global",
+        label: "방벽 증설",
+        description: "최대 라이프를 늘린다.",
+        maxLevel: 3,
+        levels: [
+          { price: 70, value: 1, unlockStage: 1 },
+          { price: 140, value: 2, unlockStage: 4 },
+          { price: 240, value: 3, unlockStage: 7 },
+        ],
+      },
+      {
+        id: "globalDamageBoost",
+        category: "global",
+        label: "전선 교범",
+        description: "모든 타워 공격력을 올린다.",
+        maxLevel: 3,
+        levels: [
+          { price: 80, value: 0.05, unlockStage: 2 },
+          { price: 160, value: 0.1, unlockStage: 4 },
+          { price: 260, value: 0.15, unlockStage: 7 },
+        ],
+      },
+      {
+        id: "attackTowerDamage",
+        category: "tower",
+        label: "공격 포탑 탄두 강화",
+        description: "공격 포탑 피해량을 강화한다.",
+        maxLevel: 3,
+        levels: [
+          { price: 75, value: 0.08, unlockStage: 2 },
+          { price: 150, value: 0.16, unlockStage: 4 },
+          { price: 250, value: 0.24, unlockStage: 7 },
+        ],
+      },
+      {
+        id: "attackTowerSpeed",
+        category: "tower",
+        label: "공격 포탑 급속 장전",
+        description: "공격 포탑 공격 속도를 높인다.",
+        maxLevel: 3,
+        levels: [
+          { price: 75, value: 0.04, unlockStage: 2 },
+          { price: 150, value: 0.08, unlockStage: 5 },
+          { price: 250, value: 0.12, unlockStage: 8 },
+        ],
+      },
+      {
+        id: "slowTowerEffect",
+        category: "tower",
+        label: "감속 포탑 냉각 강화",
+        description: "감속 효율을 높인다.",
+        maxLevel: 3,
+        levels: [
+          { price: 70, value: 0.05, unlockStage: 2 },
+          { price: 140, value: 0.1, unlockStage: 5 },
+          { price: 230, value: 0.15, unlockStage: 8 },
+        ],
+      },
+      {
+        id: "magicTowerDamage",
+        category: "tower",
+        label: "마법 포탑 증폭",
+        description: "마법 포탑 피해량을 강화한다.",
+        maxLevel: 3,
+        levels: [
+          { price: 85, value: 0.08, unlockStage: 3 },
+          { price: 170, value: 0.16, unlockStage: 6 },
+          { price: 270, value: 0.24, unlockStage: 8 },
+        ],
+      },
+      {
+        id: "cannonTowerDamage",
+        category: "tower",
+        label: "캐논 포탑 포열 보강",
+        description: "캐논 포탑 피해량을 강화한다.",
+        maxLevel: 3,
+        levels: [
+          { price: 90, value: 0.08, unlockStage: 3 },
+          { price: 180, value: 0.16, unlockStage: 6 },
+          { price: 280, value: 0.24, unlockStage: 9 },
+        ],
+      },
+      {
+        id: "hunterTowerSpeed",
+        category: "tower",
+        label: "헌터 포탑 조준 개선",
+        description: "헌터 포탑 공격 속도를 높인다.",
+        maxLevel: 3,
+        levels: [
+          { price: 85, value: 0.05, unlockStage: 3 },
+          { price: 170, value: 0.1, unlockStage: 6 },
+          { price: 270, value: 0.15, unlockStage: 9 },
+        ],
+      },
+    ],
+  );
 });
 
 test("higher tiers stay locked until highestClearedStage reaches the unlock stage", () => {
