@@ -1,0 +1,152 @@
+import { normalizeMetaProgress } from "./meta-progress.js";
+
+export const META_SHOP_CATALOG = [
+  {
+    id: "globalStartGold",
+    scope: "global",
+    name: "보급 확장",
+    description: "전투 시작 골드를 늘린다.",
+    levels: [
+      { price: 60, value: 10, unlockStage: 1 },
+      { price: 120, value: 20, unlockStage: 3 },
+      { price: 210, value: 30, unlockStage: 5 },
+    ],
+  },
+  {
+    id: "globalMaxLives",
+    scope: "global",
+    name: "방벽 증설",
+    description: "최대 라이프를 늘린다.",
+    levels: [
+      { price: 70, value: 1, unlockStage: 1 },
+      { price: 140, value: 2, unlockStage: 4 },
+      { price: 240, value: 3, unlockStage: 7 },
+    ],
+  },
+  {
+    id: "globalDamageBoost",
+    scope: "global",
+    name: "전선 교범",
+    description: "모든 타워 공격력을 올린다.",
+    levels: [
+      { price: 80, value: 0.05, unlockStage: 2 },
+      { price: 160, value: 0.1, unlockStage: 4 },
+      { price: 260, value: 0.15, unlockStage: 7 },
+    ],
+  },
+  {
+    id: "attackTowerDamage",
+    scope: "tower",
+    name: "공격 포탑 탄두 강화",
+    description: "공격 포탑 피해량을 강화한다.",
+    levels: [
+      { price: 75, value: 0.08, unlockStage: 2 },
+      { price: 150, value: 0.16, unlockStage: 4 },
+      { price: 250, value: 0.24, unlockStage: 7 },
+    ],
+  },
+  {
+    id: "attackTowerSpeed",
+    scope: "tower",
+    name: "공격 포탑 급속 장전",
+    description: "공격 포탑 공격 속도를 높인다.",
+    levels: [
+      { price: 75, value: 0.04, unlockStage: 2 },
+      { price: 150, value: 0.08, unlockStage: 5 },
+      { price: 250, value: 0.12, unlockStage: 8 },
+    ],
+  },
+  {
+    id: "slowTowerEffect",
+    scope: "tower",
+    name: "감속 포탑 냉각 강화",
+    description: "감속 효율을 높인다.",
+    levels: [
+      { price: 70, value: 0.05, unlockStage: 2 },
+      { price: 140, value: 0.1, unlockStage: 5 },
+      { price: 230, value: 0.15, unlockStage: 8 },
+    ],
+  },
+  {
+    id: "magicTowerDamage",
+    scope: "tower",
+    name: "마법 포탑 증폭",
+    description: "마법 포탑 피해량을 강화한다.",
+    levels: [
+      { price: 85, value: 0.08, unlockStage: 3 },
+      { price: 170, value: 0.16, unlockStage: 6 },
+      { price: 270, value: 0.24, unlockStage: 8 },
+    ],
+  },
+  {
+    id: "cannonTowerDamage",
+    scope: "tower",
+    name: "캐논 포탑 포열 보강",
+    description: "캐논 포탑 피해량을 강화한다.",
+    levels: [
+      { price: 90, value: 0.08, unlockStage: 3 },
+      { price: 180, value: 0.16, unlockStage: 6 },
+      { price: 280, value: 0.24, unlockStage: 9 },
+    ],
+  },
+  {
+    id: "hunterTowerSpeed",
+    scope: "tower",
+    name: "헌터 포탑 조준 개선",
+    description: "헌터 포탑 공격 속도를 높인다.",
+    levels: [
+      { price: 85, value: 0.05, unlockStage: 3 },
+      { price: 170, value: 0.1, unlockStage: 6 },
+      { price: 270, value: 0.15, unlockStage: 9 },
+    ],
+  },
+];
+
+const META_SHOP_CATALOG_BY_ID = new Map(
+  META_SHOP_CATALOG.map((upgrade) => [upgrade.id, upgrade]),
+);
+
+export function getMetaRewardForStage(stageNumber) {
+  return 20 + stageNumber * 15;
+}
+
+export function canPurchaseUpgrade(progress, upgradeId) {
+  const normalized = normalizeMetaProgress(progress);
+  const definition = META_SHOP_CATALOG_BY_ID.get(upgradeId);
+
+  if (!definition) {
+    return false;
+  }
+
+  const currentLevel = normalized.upgrades[upgradeId] ?? 0;
+  const nextLevel = definition.levels[currentLevel];
+
+  if (!nextLevel) {
+    return false;
+  }
+
+  return (
+    normalized.currency >= nextLevel.price &&
+    normalized.highestClearedStage >= nextLevel.unlockStage
+  );
+}
+
+export function purchaseUpgrade(progress, upgradeId) {
+  if (!canPurchaseUpgrade(progress, upgradeId)) {
+    return progress;
+  }
+
+  const normalized = normalizeMetaProgress(progress);
+  const definition = META_SHOP_CATALOG_BY_ID.get(upgradeId);
+  const currentLevel = normalized.upgrades[upgradeId] ?? 0;
+  const nextLevel = definition.levels[currentLevel];
+
+  return {
+    ...normalized,
+    currency: normalized.currency - nextLevel.price,
+    upgrades: {
+      ...normalized.upgrades,
+      [upgradeId]: currentLevel + 1,
+    },
+  };
+}
