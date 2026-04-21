@@ -18,7 +18,6 @@ import {
   buildTowerAtCursor,
   canBuildTower,
   CELL_SIZE,
-  continueCampaign,
   createInitialState,
   deleteTowerAtCursor,
   ENEMY_SPECIES,
@@ -634,10 +633,9 @@ export class BattleScene extends Phaser.Scene {
       const completedStage = getCompletedBattleStage(session, this.state);
       this.persistStageClearRewards(completedStage);
       const progressedSession = completeBattleStage(session, completedStage);
-      const nextSession = beginBattleFromSelection(progressedSession);
-      this.game.registry.set("session", nextSession);
-      this.state = continueCampaign(this.state);
-      this.lastTickAt = 0;
+      this.game.registry.set("session", progressedSession);
+      this.setBattleControlsVisible(false);
+      this.scene.start("ThemeScene");
       return;
     }
 

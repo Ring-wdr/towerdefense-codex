@@ -326,6 +326,14 @@ test("battle scene persists stage clear rewards through storage before session c
   );
   assert.match(
     handleStatusTransitionBody,
+    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*this\.game\.registry\.set\("session",\s*progressedSession\);[\s\S]*this\.setBattleControlsVisible\(false\);[\s\S]*this\.scene\.start\("ThemeScene"\);/,
+  );
+  assert.doesNotMatch(
+    handleStatusTransitionBody,
+    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*beginBattleFromSelection[\s\S]*continueCampaign/,
+  );
+  assert.match(
+    handleStatusTransitionBody,
     /if \(this\.state\.status === "victory"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
   );
 });

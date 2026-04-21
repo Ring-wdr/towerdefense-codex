@@ -425,7 +425,7 @@ test("clearing the boss wave moves the campaign to the next stage gate", () => {
   assert.equal(state.spawnedInWave, 0);
 });
 
-test("advancing to the next stage removes towers that become road cells", () => {
+test("advancing to the next stage clears all towers before the next briefing", () => {
   let state = startGame(createInitialState());
   state.stage = 1;
   state.wave = 5;
@@ -438,10 +438,7 @@ test("advancing to the next stage removes towers that become road cells", () => 
 
   assert.equal(state.status, "stage-cleared");
   assert.equal(state.stage, 2);
-  assert.deepEqual(
-    state.towers.map((tower) => ({ type: tower.type, x: tower.x, y: tower.y })),
-    [{ type: "slow", x: 1, y: 1 }],
-  );
+  assert.deepEqual(state.towers, []);
 });
 
 test("continueCampaign resumes the next stage after a stage clear", () => {
