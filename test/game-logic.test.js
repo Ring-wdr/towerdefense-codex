@@ -319,12 +319,47 @@ test("restart resets state", () => {
   assert.equal(state.status, "ready");
 });
 
+test("restartGame preserves permanent meta bonuses when rebuilding battle state", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalStartGold = 3;
+  metaProgress.upgrades.globalMaxLives = 1;
+
+  const restarted = restartGame(4, metaProgress);
+
+  assert.equal(restarted.stage, 4);
+  assert.equal(restarted.gold, 170);
+  assert.equal(restarted.lives, 16);
+  assert.deepEqual(restarted.metaProgress, createInitialState(4, metaProgress).metaProgress);
+});
+
 test("restartGame can target an explicit stage before battle starts", () => {
   const state = restartGame(4);
 
   assert.equal(state.stage, 4);
   assert.equal(state.status, "ready");
   assert.equal(state.wave, 1);
+});
+
+test("later speed tiers reduce cooldown further for attack and hunter towers", () => {
+  const attackTierTwoMeta = createMetaProgress();
+  attackTierTwoMeta.upgrades.attackTowerSpeed = 2;
+  const attackTierThreeMeta = createMetaProgress();
+  attackTierThreeMeta.upgrades.attackTowerSpeed = 3;
+
+  const hunterTierTwoMeta = createMetaProgress();
+  hunterTierTwoMeta.upgrades.hunterTowerSpeed = 2;
+  const hunterTierThreeMeta = createMetaProgress();
+  hunterTierThreeMeta.upgrades.hunterTowerSpeed = 3;
+
+  const attackTierTwo = getTowerStats(createTower("attack", 2, 2), attackTierTwoMeta);
+  const attackTierThree = getTowerStats(createTower("attack", 2, 2), attackTierThreeMeta);
+  const hunterTierTwo = getTowerStats(createTower("hunter", 2, 2), hunterTierTwoMeta);
+  const hunterTierThree = getTowerStats(createTower("hunter", 2, 2), hunterTierThreeMeta);
+
+  assert.equal(attackTierTwo.cooldown, 7);
+  assert.equal(attackTierThree.cooldown, 6);
+  assert.equal(hunterTierTwo.cooldown, 5);
+  assert.equal(hunterTierThree.cooldown, 4);
 });
 
 test("startGame keeps the selected stage when entering battle", () => {

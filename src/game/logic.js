@@ -210,8 +210,8 @@ export function togglePause(state) {
   return next;
 }
 
-export function restartGame(stage = 1) {
-  return createInitialState(stage);
+export function restartGame(stage = 1, metaProgress = createMetaProgress()) {
+  return createInitialState(stage, metaProgress);
 }
 
 export function selectTowerType(state, towerType) {
@@ -767,7 +767,11 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
   switch (towerType) {
     case "attack":
       stats.damage = scaleDamage(stats.damage, 1 + modifiers.attackDamageMultiplier);
-      stats.cooldown = reduceCooldown(stats.cooldown, modifiers.attackSpeedBonus);
+      stats.cooldown = reduceCooldown(
+        stats.cooldown,
+        modifiers.attackSpeedBonus,
+        modifiers.attackSpeedLevel,
+      );
       break;
     case "slow":
       stats.slowFactor = clamp(
@@ -783,7 +787,11 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
       stats.damage = scaleDamage(stats.damage, 1 + modifiers.cannonDamageMultiplier);
       break;
     case "hunter":
-      stats.cooldown = reduceCooldown(stats.cooldown, modifiers.hunterSpeedBonus);
+      stats.cooldown = reduceCooldown(
+        stats.cooldown,
+        modifiers.hunterSpeedBonus,
+        modifiers.hunterSpeedLevel,
+      );
       break;
     default:
       break;
@@ -796,8 +804,15 @@ function scaleDamage(damage, multiplier) {
   return roundToHundredths(damage * multiplier);
 }
 
-function reduceCooldown(cooldown, bonus) {
-  return Math.max(1, Math.floor(cooldown * (1 - bonus)));
+function reduceCooldown(cooldown, bonus, speedLevel = 0) {
+  if (bonus <= 0 || speedLevel <= 0) {
+    return cooldown;
+  }
+
+  const baselineCooldown = Math.floor(cooldown * (1 - bonus));
+  const extraReduction = Math.floor((speedLevel - 1) / 2);
+
+  return Math.max(1, baselineCooldown - extraReduction);
 }
 
 function roundToHundredths(value) {

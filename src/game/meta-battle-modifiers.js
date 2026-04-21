@@ -25,6 +25,17 @@ function getUpgradeBonus(level, bonusValues) {
   return bonusValues[boundedLevel];
 }
 
+function getUpgradeLevel(level, bonusValues) {
+  if (!Number.isFinite(level)) {
+    return 0;
+  }
+
+  return Math.min(
+    Math.max(Math.trunc(level), 0),
+    bonusValues.length - 1,
+  );
+}
+
 export function getMetaBattleModifiers(metaProgress) {
   const normalized = normalizeMetaProgress(metaProgress);
   const upgrades = normalized.upgrades;
@@ -50,6 +61,10 @@ export function getMetaBattleModifiers(metaProgress) {
       upgrades.attackTowerSpeed,
       META_BATTLE_BONUS_VALUES.attackTowerSpeed,
     ),
+    attackSpeedLevel: getUpgradeLevel(
+      upgrades.attackTowerSpeed,
+      META_BATTLE_BONUS_VALUES.attackTowerSpeed,
+    ),
     slowEffectBonus: getUpgradeBonus(
       upgrades.slowTowerEffect,
       META_BATTLE_BONUS_VALUES.slowTowerEffect,
@@ -63,6 +78,10 @@ export function getMetaBattleModifiers(metaProgress) {
       META_BATTLE_BONUS_VALUES.cannonTowerDamage,
     ),
     hunterSpeedBonus: getUpgradeBonus(
+      upgrades.hunterTowerSpeed,
+      META_BATTLE_BONUS_VALUES.hunterTowerSpeed,
+    ),
+    hunterSpeedLevel: getUpgradeLevel(
       upgrades.hunterTowerSpeed,
       META_BATTLE_BONUS_VALUES.hunterTowerSpeed,
     ),

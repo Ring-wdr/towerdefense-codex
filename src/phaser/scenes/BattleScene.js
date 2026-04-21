@@ -410,7 +410,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   restartBattle() {
-    this.state = restartGame(this.state.stage);
+    this.state = restartGame(this.state.stage, this.state.metaProgress);
     this.lastTickAt = 0;
     for (const emitter of this.attackParticleEmitters.values()) {
       emitter.killAll();
