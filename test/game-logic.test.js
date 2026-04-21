@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { createMetaProgress } from "../src/game/meta-progress.js";
 import {
@@ -23,6 +24,8 @@ import {
   togglePause,
   upgradeTowerAtCursor,
 } from "../src/game/logic.js";
+
+const logicSource = readFileSync(new URL("../src/game/logic.js", import.meta.url), "utf8");
 
 function advance(state, ticks) {
   let next = state;
@@ -373,6 +376,12 @@ test("later speed tiers reduce cooldown further for attack and hunter towers", (
   assert.ok(attackTierTwo.cooldown > attackTierThree.cooldown);
   assert.ok(hunterTierOne.cooldown > hunterTierTwo.cooldown);
   assert.ok(hunterTierTwo.cooldown > hunterTierThree.cooldown);
+});
+
+test("reduceCooldown derives discrete reductions from speed bonus values instead of raw speed levels", () => {
+  assert.match(logicSource, /function reduceCooldown\(cooldown,\s*bonus,\s*bonusStep/);
+  assert.match(logicSource, /bonus\s*\/\s*bonusStep/);
+  assert.doesNotMatch(logicSource, /function reduceCooldown\([^)]*speedLevel/);
 });
 
 test("startGame keeps the selected stage when entering battle", () => {

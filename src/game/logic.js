@@ -770,7 +770,7 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
       stats.cooldown = reduceCooldown(
         stats.cooldown,
         modifiers.attackSpeedBonus,
-        modifiers.attackSpeedLevel,
+        modifiers.attackSpeedBonusStep,
       );
       break;
     case "slow":
@@ -790,7 +790,7 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
       stats.cooldown = reduceCooldown(
         stats.cooldown,
         modifiers.hunterSpeedBonus,
-        modifiers.hunterSpeedLevel,
+        modifiers.hunterSpeedBonusStep,
       );
       break;
     default:
@@ -804,12 +804,13 @@ function scaleDamage(damage, multiplier) {
   return roundToHundredths(damage * multiplier);
 }
 
-function reduceCooldown(cooldown, bonus, speedLevel = 0) {
-  if (bonus <= 0 || speedLevel <= 0) {
+function reduceCooldown(cooldown, bonus, bonusStep = bonus) {
+  if (bonus <= 0 || bonusStep <= 0) {
     return cooldown;
   }
 
-  return Math.max(1, cooldown - speedLevel);
+  const reduction = Math.max(1, Math.round(bonus / bonusStep));
+  return Math.max(1, cooldown - reduction);
 }
 
 function roundToHundredths(value) {
