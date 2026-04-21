@@ -3,8 +3,8 @@ import { normalizeMetaProgress } from "./meta-progress.js";
 export const META_SHOP_CATALOG = [
   {
     id: "globalStartGold",
-    scope: "global",
-    name: "보급 확장",
+    category: "global",
+    label: "보급 확장",
     description: "전투 시작 골드를 늘린다.",
     levels: [
       { price: 60, value: 10, unlockStage: 1 },
@@ -14,8 +14,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "globalMaxLives",
-    scope: "global",
-    name: "방벽 증설",
+    category: "global",
+    label: "방벽 증설",
     description: "최대 라이프를 늘린다.",
     levels: [
       { price: 70, value: 1, unlockStage: 1 },
@@ -25,8 +25,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "globalDamageBoost",
-    scope: "global",
-    name: "전선 교범",
+    category: "global",
+    label: "전선 교범",
     description: "모든 타워 공격력을 올린다.",
     levels: [
       { price: 80, value: 0.05, unlockStage: 2 },
@@ -36,8 +36,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "attackTowerDamage",
-    scope: "tower",
-    name: "공격 포탑 탄두 강화",
+    category: "tower",
+    label: "공격 포탑 탄두 강화",
     description: "공격 포탑 피해량을 강화한다.",
     levels: [
       { price: 75, value: 0.08, unlockStage: 2 },
@@ -47,8 +47,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "attackTowerSpeed",
-    scope: "tower",
-    name: "공격 포탑 급속 장전",
+    category: "tower",
+    label: "공격 포탑 급속 장전",
     description: "공격 포탑 공격 속도를 높인다.",
     levels: [
       { price: 75, value: 0.04, unlockStage: 2 },
@@ -58,8 +58,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "slowTowerEffect",
-    scope: "tower",
-    name: "감속 포탑 냉각 강화",
+    category: "tower",
+    label: "감속 포탑 냉각 강화",
     description: "감속 효율을 높인다.",
     levels: [
       { price: 70, value: 0.05, unlockStage: 2 },
@@ -69,8 +69,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "magicTowerDamage",
-    scope: "tower",
-    name: "마법 포탑 증폭",
+    category: "tower",
+    label: "마법 포탑 증폭",
     description: "마법 포탑 피해량을 강화한다.",
     levels: [
       { price: 85, value: 0.08, unlockStage: 3 },
@@ -80,8 +80,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "cannonTowerDamage",
-    scope: "tower",
-    name: "캐논 포탑 포열 보강",
+    category: "tower",
+    label: "캐논 포탑 포열 보강",
     description: "캐논 포탑 피해량을 강화한다.",
     levels: [
       { price: 90, value: 0.08, unlockStage: 3 },
@@ -91,8 +91,8 @@ export const META_SHOP_CATALOG = [
   },
   {
     id: "hunterTowerSpeed",
-    scope: "tower",
-    name: "헌터 포탑 조준 개선",
+    category: "tower",
+    label: "헌터 포탑 조준 개선",
     description: "헌터 포탑 공격 속도를 높인다.",
     levels: [
       { price: 85, value: 0.05, unlockStage: 3 },

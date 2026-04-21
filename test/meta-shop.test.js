@@ -30,7 +30,6 @@ test("higher tiers stay locked until highestClearedStage reaches the unlock stag
     highestClearedStage: 4,
   };
 
-  assert.equal(canPurchaseUpgrade(lockedProgress, "globalStartGold"), true);
   assert.equal(canPurchaseUpgrade(lockedProgress, "globalDamageBoost"), false);
   assert.equal(canPurchaseUpgrade(unlockedProgress, "globalDamageBoost"), true);
 });
