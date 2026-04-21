@@ -1020,8 +1020,8 @@ export class BattleScene extends Phaser.Scene {
     const actionHint = hoveredTower
       ? `${hoveredTower.type.toUpperCase()} L${hoveredTower.level} selected`
       : canBuildTower(this.state, this.state.cursor.x, this.state.cursor.y, this.state.selectedTowerType)
-        ? `Build ${selectedTower.name} for ${selectedTower.cost}g`
-        : "Tile unavailable for the selected tower";
+        ? `Deploy ${selectedTower.name} • ${selectedTower.cost}G`
+        : "Cannot deploy here";
 
     this.hudText.setText([
       `Stage ${this.state.stage}  Wave ${this.state.wave}  Lives ${this.state.lives}  Gold ${this.state.gold}`,

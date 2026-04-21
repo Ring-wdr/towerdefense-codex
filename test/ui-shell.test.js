@@ -6,7 +6,10 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
+const campaignSceneSource = readFileSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
+const themeSceneSource = readFileSync(new URL("../src/phaser/scenes/ThemeScene.js", import.meta.url), "utf8");
+const titleSceneSource = readFileSync(new URL("../src/phaser/scenes/TitleScene.js", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 function extractMethodBody(source, methodName) {
@@ -252,6 +255,8 @@ test("battle controls hydrate tower icon images from imported assets", () => {
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
+  assert.match(html, /<h2>Tower Bay<\/h2>/);
+  assert.match(html, /<p class="dock-label">Select Tower<\/p>/);
 
   const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
   assert.ok(syncTowerActionOverlayBody);
@@ -259,6 +264,29 @@ test("tower actions use readable labels and the battle scene is ready for contex
   assert.match(textUpdateValues.join("\n"), /Delete/);
   assert.match(textUpdateValues.join("\n"), /Max/);
   assert.match(textUpdateValues.join("\n"), /Upgrade/);
+});
+
+test("scene and overlay copy use the refreshed briefing voice", () => {
+  assert.match(battleSceneSource, /Deploy \$\{selectedTower\.name\} • \$\{selectedTower\.cost\}G/);
+  assert.match(battleSceneSource, /Cannot deploy here/);
+  assert.doesNotMatch(battleSceneSource, /Tile unavailable for the selected tower/);
+
+  assert.match(titleSceneSource, /전선을 훑고 진입할 전구를 고른다\./);
+  assert.match(titleSceneSource, /브리핑이 끝나면 전투를 개시한다\./);
+  assert.match(titleSceneSource, /단일 캠페인 루트\. 각 전선은 순차적으로 개방된다\./);
+
+  assert.match(campaignSceneSource, /전구를 전환해 현재 전선을 확인한 뒤 브리핑으로 진입한다\./);
+  assert.doesNotMatch(campaignSceneSource, /Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen\./);
+
+  assert.match(themeSceneSource, /\$\{stage\.theme\} 전선/);
+  assert.match(themeSceneSource, /ENTRY LOCKED/);
+  assert.match(themeSceneSource, /이 구간은 아직 봉쇄 상태다\. 캠페인에서 앞선 전장을 먼저 확보해야 한다\./);
+  assert.doesNotMatch(themeSceneSource, /LOCKED APPROACH/);
+  assert.doesNotMatch(themeSceneSource, /\$\{stage\.theme\.toUpperCase\(\)\} FRONT/);
+
+  assert.match(overlaySceneSource, /Stage \$\{stage\} 교전이 중지됐다\. 전투를 재개하거나 재정비 후 복귀할 수 있다\./);
+  assert.match(overlaySceneSource, /Stage \$\{stage\} 방어선이 무너졌다\. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다\./);
+  assert.match(overlaySceneSource, /Stage \$\{stage\} 확보 완료\. 이제 모든 전장을 캠페인에서 다시 선택할 수 있다\./);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {

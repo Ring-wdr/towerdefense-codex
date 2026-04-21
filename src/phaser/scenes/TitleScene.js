@@ -66,8 +66,8 @@ export class TitleScene extends Phaser.Scene {
         layout.centerX,
         lockup.titleText.y + lockup.titleText.height + (isCompactTitle ? 14 : layout.isMobile ? 22 : 28),
         isCompactTitle
-          ? "Survey the route. Pick the theater."
-          : "Survey the route. Pick the theater. Commit to battle only when the brief is clear.",
+          ? "전선을 훑고 진입할 전구를 고른다."
+          : "전선을 훑고 진입할 전구를 고른다. 브리핑이 끝나면 전투를 개시한다.",
         {
           ...createBodyTextStyle({
           color: "#d9d1c4",
@@ -88,9 +88,7 @@ export class TitleScene extends Phaser.Scene {
       crest.setAlpha(0.96);
     }
 
-    const helperCopy = layout.isMobile
-      ? "Single campaign route. Battle controls stay external."
-      : "Single campaign route. Phaser-rendered front end. Battle controls remain external.";
+    const helperCopy = "단일 캠페인 루트. 각 전선은 순차적으로 개방된다.";
 
     const commandRow = layout.getCommandRow(1, layout.isMobile ? 220 : 260);
     if (!isCompactTitle) {

@@ -102,7 +102,7 @@ export class CampaignScene extends Phaser.Scene {
         .text(
           layout.centerX,
           layout.focus.top + (layout.isMobile ? 68 : 82),
-          `${session.selectedTheme ?? "No Theme"} / Stage ${session.selectedStage}.`,
+          `${session.selectedTheme ?? "No Theme"} / Stage ${session.selectedStage}`,
           {
             ...createBodyTextStyle({
             color: "#d8d1c4",
@@ -126,7 +126,7 @@ export class CampaignScene extends Phaser.Scene {
         .text(
           layout.centerX,
           layout.focus.top + (layout.isMobile ? 176 : 208),
-          "Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen.",
+          "전구를 전환해 현재 전선을 확인한 뒤 브리핑으로 진입한다.",
           {
             ...createBodyTextStyle({
             color: "#d8d1c4",

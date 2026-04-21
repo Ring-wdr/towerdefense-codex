@@ -231,7 +231,7 @@ export class ThemeScene extends Phaser.Scene {
       this,
       layout.centerX,
       layout.header.top + 2,
-      `${stage.theme.toUpperCase()} FRONT`,
+      `${stage.theme} 전선`,
       stage.name,
       {
         kickerSize: layout.isMobile ? 17 : 20,
@@ -346,7 +346,7 @@ export class ThemeScene extends Phaser.Scene {
       summaryGraphics.strokeRoundedRect(summaryLeft, summaryTop, summaryWidth, summaryHeight, 18);
 
       this.add
-        .text(layout.centerX, summaryTop + 12, battleLocked ? "LOCKED APPROACH" : "TACTICAL BRIEF", createBodyTextStyle({
+        .text(layout.centerX, summaryTop + 12, battleLocked ? "ENTRY LOCKED" : "TACTICAL BRIEF", createBodyTextStyle({
           color: "#d6ae72",
           fontFamily: PHASER_TEXT_FONTS.body,
           fontSize: `${layout.isMobile ? 16 : 18}px`,
@@ -357,7 +357,7 @@ export class ThemeScene extends Phaser.Scene {
 
       this.add
         .text(layout.centerX, summaryTop + 40, battleLocked
-          ? "이전 스테이지를 클리어해야 이 구역으로 진입할 수 있습니다."
+          ? "이 구간은 아직 봉쇄 상태다. 캠페인에서 앞선 전장을 먼저 확보해야 한다."
           : stage.summary, createBodyTextStyle({
           color: "#ece5d7",
           fontFamily: PHASER_TEXT_FONTS.body,
@@ -378,7 +378,7 @@ export class ThemeScene extends Phaser.Scene {
 
     if (battleLocked && !summaryVisible) {
       this.add
-        .text(layout.centerX, layout.command.top + (layout.isMobile ? 8 : 10), "Stage locked. Clear the prior stage in Campaign first.", createBodyTextStyle({
+        .text(layout.centerX, layout.command.top + (layout.isMobile ? 8 : 10), "이 구간은 아직 봉쇄 상태다. 캠페인에서 앞선 전장을 먼저 확보해야 한다.", createBodyTextStyle({
           color: "#d6ae72",
           fontFamily: PHASER_TEXT_FONTS.body,
           fontSize: `${layout.isMobile ? 15 : 18}px`,

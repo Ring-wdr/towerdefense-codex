@@ -92,7 +92,7 @@ export class OverlayScene extends Phaser.Scene {
     if (mode === "game-over") {
       return {
         title: "Game Over",
-        body: `Stage ${stage} defense collapsed. Retry the route or return to the theme screen.`,
+        body: `Stage ${stage} 방어선이 무너졌다. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다.`,
         actions: [
           {
             label: "Retry",
@@ -119,7 +119,7 @@ export class OverlayScene extends Phaser.Scene {
     if (mode === "campaign-complete") {
       return {
         title: "Campaign Complete",
-        body: `Stage ${stage} cleared. Every stage is now replayable from the campaign flow.`,
+        body: `Stage ${stage} 확보 완료. 이제 모든 전장을 캠페인에서 다시 선택할 수 있다.`,
         actions: [
           {
             label: "Replay",
@@ -142,7 +142,7 @@ export class OverlayScene extends Phaser.Scene {
 
     return {
       title: "Paused",
-      body: `Stage ${stage} is on hold. Resume, retry, or step back to the theme screen.`,
+      body: `Stage ${stage} 교전이 중지됐다. 전투를 재개하거나 재정비 후 복귀할 수 있다.`,
       actions: [
         {
           label: "Resume",
