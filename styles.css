@@ -415,6 +415,14 @@ button:disabled {
   box-shadow: 0 12px 24px rgba(5, 10, 10, 0.3);
 }
 
+.board-start-button {
+  left: 18px;
+  right: auto;
+  background: linear-gradient(180deg, rgba(160, 226, 152, 0.94), rgba(58, 132, 71, 0.92));
+  border-color: color-mix(in srgb, var(--success) 70%, white 30%);
+  color: oklch(0.18 0.02 145);
+}
+
 #game-board {
   grid-area: canvas;
   display: block;
@@ -1000,6 +1008,11 @@ button:disabled {
     top: 10px;
     right: 10px;
     padding: 10px 12px;
+  }
+
+  .board-start-button {
+    left: 10px;
+    right: auto;
   }
 
   .overlay-message {

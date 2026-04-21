@@ -13,6 +13,7 @@ export const GRID_ROWS = 8;
 export const CELL_SIZE = 60;
 export const TICK_MS = 100;
 export const MAX_TOWER_LEVEL = 3;
+export const INTERMISSION_TICKS = 300;
 
 export const TOWER_TYPES = {
   attack: {
@@ -129,21 +130,23 @@ export function createInitialState(stage = 1) {
     selectedTowerType: "attack",
     spawnedInWave: 0,
     stage,
-    status: "menu",
+    status: "ready",
     tick: 0,
     towers: [],
     wave: 1,
     nextSpawnTick: 12,
+    intermissionTicks: 0,
   };
 }
 
 export function startGame(state) {
-  if (state.status !== "menu") {
+  if (!["ready", "intermission"].includes(state.status)) {
     return state;
   }
 
   const next = structuredClone(state);
   next.status = "running";
+  next.intermissionTicks = 0;
   return next;
 }
 
@@ -153,11 +156,21 @@ export function continueCampaign(state) {
   }
 
   const next = structuredClone(state);
-  next.status = "running";
+  next.status = "intermission";
+  next.intermissionTicks = INTERMISSION_TICKS;
   return next;
 }
 
 export function tickGame(state) {
+  if (state.status === "intermission") {
+    const next = structuredClone(state);
+    next.intermissionTicks = Math.max(0, next.intermissionTicks - 1);
+    if (next.intermissionTicks === 0) {
+      next.status = "running";
+    }
+    return next;
+  }
+
   if (state.status !== "running") {
     return state;
   }
@@ -220,7 +233,7 @@ export function setCursorPosition(state, x, y) {
 }
 
 export function buildTowerAtCursor(state) {
-  if (state.status !== "running") {
+  if (!canManageBattlefield(state.status)) {
     return state;
   }
 
@@ -243,7 +256,7 @@ export function buildTowerAtCursor(state) {
 }
 
 export function upgradeTowerAtCursor(state) {
-  if (state.status !== "running") {
+  if (!canManageBattlefield(state.status)) {
     return state;
   }
 
@@ -266,7 +279,7 @@ export function upgradeTowerAtCursor(state) {
 }
 
 export function deleteTowerAtCursor(state) {
-  if (state.status !== "running") {
+  if (!canManageBattlefield(state.status)) {
     return state;
   }
 
@@ -710,6 +723,10 @@ function distanceBetweenTowerAndEnemy(tower, enemy) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function canManageBattlefield(status) {
+  return ["running", "ready", "intermission"].includes(status);
 }
 
 function getLegacyWaveDefinition(wave) {

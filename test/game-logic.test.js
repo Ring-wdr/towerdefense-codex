@@ -78,7 +78,7 @@ test("game starts from main menu", () => {
   const state = createInitialState();
   const next = startGame(state);
 
-  assert.equal(state.status, "menu");
+  assert.equal(state.status, "ready");
   assert.equal(next.status, "running");
 });
 
@@ -86,7 +86,17 @@ test("createInitialState accepts an explicit stage for phaser scene boot", () =>
   const state = createInitialState(5);
 
   assert.equal(state.stage, 5);
-  assert.equal(state.status, "menu");
+  assert.equal(state.status, "ready");
+});
+
+test("players can place an opening tower before the battle starts", () => {
+  let state = createInitialState();
+  state = moveCursor(state, 1, 0);
+  state = buildTowerAtCursor(state);
+
+  assert.equal(state.status, "ready");
+  assert.equal(state.towers.length, 1);
+  assert.equal(state.gold, 100);
 });
 
 test("cursor can be moved to an absolute tile position", () => {
@@ -279,14 +289,14 @@ test("restart resets state", () => {
   assert.equal(state.towers.length, 0);
   assert.equal(state.score, 0);
   assert.equal(state.wave, 1);
-  assert.equal(state.status, "menu");
+  assert.equal(state.status, "ready");
 });
 
 test("restartGame can target an explicit stage before battle starts", () => {
   const state = restartGame(4);
 
   assert.equal(state.stage, 4);
-  assert.equal(state.status, "menu");
+  assert.equal(state.status, "ready");
   assert.equal(state.wave, 1);
 });
 
@@ -338,8 +348,37 @@ test("continueCampaign resumes the next stage after a stage clear", () => {
 
   const next = continueCampaign(state);
 
-  assert.equal(next.status, "running");
+  assert.equal(next.status, "intermission");
+  assert.equal(next.intermissionTicks, 300);
   assert.equal(next.stage, 2);
+});
+
+test("intermission auto-resumes the next battle after the countdown", () => {
+  const state = createInitialState();
+  state.stage = 2;
+  state.status = "stage-cleared";
+
+  const intermission = continueCampaign(state);
+  const almostReady = advance(intermission, 299);
+  const resumed = tickGame(almostReady);
+
+  assert.equal(almostReady.status, "intermission");
+  assert.equal(almostReady.intermissionTicks, 1);
+  assert.equal(resumed.status, "running");
+  assert.equal(resumed.stage, 2);
+});
+
+test("startGame can skip an intermission early", () => {
+  const state = createInitialState();
+  state.stage = 3;
+  state.status = "stage-cleared";
+
+  const intermission = continueCampaign(state);
+  const started = startGame(intermission);
+
+  assert.equal(intermission.status, "intermission");
+  assert.equal(started.status, "running");
+  assert.equal(started.intermissionTicks, 0);
 });
 
 test("clearing the last stage ends the campaign in victory", () => {

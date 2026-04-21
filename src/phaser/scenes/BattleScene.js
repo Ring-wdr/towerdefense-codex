@@ -18,6 +18,7 @@ import {
   buildTowerAtCursor,
   canBuildTower,
   CELL_SIZE,
+  continueCampaign,
   createInitialState,
   deleteTowerAtCursor,
   ENEMY_SPECIES,
@@ -33,6 +34,7 @@ import {
   selectTowerType,
   setCursorPosition,
   startGame,
+  TICK_MS,
   tickGame,
   togglePause,
   TOWER_TYPES,
@@ -90,6 +92,7 @@ const ENEMY_TEXTURE_URLS = {
 };
 const GRASS_TILE_TEXTURE_KEYS = ["tile-grass-1", "tile-grass-2"];
 const ROAD_TILE_TEXTURE_KEYS = ["tile-road-1", "tile-road-2"];
+const BATTLE_READY_STATUSES = ["running", "ready", "intermission"];
 const TILE_TEXTURE_URLS = {
   "tile-grass-1": grassTile1Url,
   "tile-grass-2": grassTile2Url,
@@ -112,6 +115,7 @@ function getSession(scene) {
 function getControlElements() {
   return {
     root: document.getElementById("battle-controls"),
+    startButton: document.getElementById("start-button"),
     pauseButton: document.getElementById("pause-button"),
     towerActions: document.getElementById("tower-actions"),
     upgradeAction: document.getElementById("upgrade-action"),
@@ -174,7 +178,7 @@ export class BattleScene extends Phaser.Scene {
     const stage = data.stage ?? sessionStage ?? 1;
     const nextSession = beginBattleFromSelection(selectStage(getSession(this), stage));
 
-    this.state = startGame(createInitialState(stage));
+    this.state = createInitialState(stage);
     this.lastTickAt = 0;
     this.game.registry.set("session", nextSession);
 
@@ -240,7 +244,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   update(time) {
-    if (this.state.status !== "running" || time - this.lastTickAt < 100) {
+    if (!["running", "intermission"].includes(this.state.status) || time - this.lastTickAt < 100) {
       this.renderScene();
       return;
     }
@@ -267,6 +271,10 @@ export class BattleScene extends Phaser.Scene {
 
     bind(this.controls.pauseButton, "click", () => {
       this.applyState(togglePause(this.state));
+    });
+
+    bind(this.controls.startButton, "click", () => {
+      this.applyState(startGame(this.state));
     });
 
     bind(this.controls.upgradeAction, "click", () => {
@@ -306,7 +314,11 @@ export class BattleScene extends Phaser.Scene {
             this.applyState(upgradeTowerAtCursor(this.state));
             break;
           case "pause":
-            this.applyState(togglePause(this.state));
+            if (["running", "paused"].includes(this.state.status)) {
+              this.applyState(togglePause(this.state));
+            } else {
+              this.applyState(startGame(this.state));
+            }
             break;
           case "restart":
             this.restartBattle();
@@ -329,6 +341,8 @@ export class BattleScene extends Phaser.Scene {
   resumeBattle() {
     if (this.state.status === "paused") {
       this.state = togglePause(this.state);
+    } else if (["ready", "intermission"].includes(this.state.status)) {
+      this.state = startGame(this.state);
     }
 
     this.lastTickAt = 0;
@@ -361,7 +375,7 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    const battleActive = this.state.status === "running";
+    const battleActive = BATTLE_READY_STATUSES.includes(this.state.status);
     const hoveredTower = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
 
     if (!battleActive || !hoveredTower) {
@@ -396,7 +410,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   restartBattle() {
-    this.state = startGame(restartGame(this.state.stage));
+    this.state = restartGame(this.state.stage);
     this.lastTickAt = 0;
     for (const emitter of this.attackParticleEmitters.values()) {
       emitter.killAll();
@@ -592,7 +606,18 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    if (this.state.status === "stage-cleared" || this.state.status === "victory") {
+    if (this.state.status === "stage-cleared") {
+      const session = getSession(this);
+      const completedStage = getCompletedBattleStage(session, this.state);
+      const progressedSession = completeBattleStage(session, completedStage);
+      const nextSession = beginBattleFromSelection(progressedSession);
+      this.game.registry.set("session", nextSession);
+      this.state = continueCampaign(this.state);
+      this.lastTickAt = 0;
+      return;
+    }
+
+    if (this.state.status === "victory") {
       const session = getSession(this);
       const completedStage = getCompletedBattleStage(session, this.state);
       const nextSession = completeBattleStage(session, completedStage);
@@ -625,7 +650,7 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    const battleActive = this.state.status === "running";
+    const battleActive = BATTLE_READY_STATUSES.includes(this.state.status);
     this.setBattleControlsVisible(battleActive);
 
     const hoveredTower = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y);
@@ -643,8 +668,20 @@ export class BattleScene extends Phaser.Scene {
       button.setAttribute("aria-pressed", isSelected ? "true" : "false");
     }
 
+    if (this.controls.startButton) {
+      this.controls.startButton.hidden = this.state.status === "running";
+      this.controls.startButton.textContent = this.state.status === "intermission" ? "Start Next" : "Start";
+    }
+
     if (this.controls.pauseButton) {
+      this.controls.pauseButton.hidden = this.state.status !== "running";
       this.controls.pauseButton.textContent = this.state.status === "paused" ? "Resume" : "Pause";
+    }
+
+    for (const button of this.controls.actionButtons) {
+      if (button.dataset.action === "pause") {
+        button.textContent = this.state.status === "running" ? "Pause" : "Start";
+      }
     }
 
     this.syncTowerActionOverlay();
@@ -1034,7 +1071,11 @@ export class BattleScene extends Phaser.Scene {
     }
 
     let label = this.state.status;
-    if (this.state.status === "paused") {
+    if (this.state.status === "ready") {
+      label = "Ready";
+    } else if (this.state.status === "intermission") {
+      label = `Intermission ${Math.ceil((this.state.intermissionTicks * TICK_MS) / 1000)}s`;
+    } else if (this.state.status === "paused") {
       label = "Paused";
     } else if (this.state.status === "game-over") {
       label = "Game Over";

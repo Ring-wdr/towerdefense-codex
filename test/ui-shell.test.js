@@ -227,6 +227,7 @@ function collectTextUpdateValues(source) {
 test("ui shell exposes only the phaser mount and battle controls", () => {
   assert.match(html, /id="game-root"/);
   assert.match(html, /id="battle-controls"/);
+  assert.match(html, /id="start-button"/);
   assert.match(html, /id="pause-button"/);
   assert.match(html, /id="tower-buttons"/);
   assert.match(html, /id="tower-buttons-dock"/);
@@ -250,6 +251,13 @@ test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(mainSource, /img\.src\s*=/);
   assert.match(gameMainSource, /createGameSession/);
   assert.match(gameMainSource, /createGame\(mountNode\)/);
+});
+
+test("battle scene opens on a ready state and exposes a start button for entry and breaks", () => {
+  assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
+  assert.match(battleSceneSource, /this\.state\s*=\s*createInitialState\(stage\);/);
+  assert.doesNotMatch(battleSceneSource, /this\.state\s*=\s*startGame\(createInitialState\(stage\)\);/);
+  assert.match(battleSceneSource, /this\.controls\.startButton\.textContent/);
 });
 
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
