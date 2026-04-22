@@ -445,16 +445,38 @@ test("shop scene renders combat unlock cards with a dedicated category style", (
 test("campaign scene adds a compact hero tier for mid-width layouts", () => {
   const heroSection = campaignSceneSource.match(/function createThemeHeroCard[\s\S]*?return container;\r?\n\}/)?.[0] ?? "";
 
+  assert.match(campaignSceneSource, /const headerTitle = "";/);
+  assert.match(campaignSceneSource, /const titleLockup = createTitleLockup\(/);
+  assert.match(campaignSceneSource, /"CAMPAIGN MAP",\s*headerTitle,/);
   assert.match(campaignSceneSource, /const isCompactCampaignLayout = layout\.width <= COMPACT_CAMPAIGN_BREAKPOINT;/);
   assert.match(campaignSceneSource, /compact:\s*isCompactCampaignLayout/);
-  assert.match(heroSection, /const descriptionText = config\.layout\.isMobile \? "" : config\.description;/);
+  assert.match(campaignSceneSource, /const chipY = titleLockup\.kickerText\.y \+ titleLockup\.kickerText\.height \+ 20;/);
+  assert.match(heroSection, /const descriptionText = config\.layout\.isMobile \? \(config\.mobileDescription \?\? config\.description\) : config\.description;/);
+  assert.match(heroSection, /const showBackgroundLogo = true;/);
   assert.match(heroSection, /const actionButtonWidth = isCompact \? config\.width - 48 : config\.layout\.isMobile \? 132 : 152;/);
   assert.match(heroSection, /const desktopActionLaneWidth = usesDesktopActionLane \? 228 : 0;/);
   assert.match(heroSection, /const actionButtonY = cardHeight - actionButtonHeight - 24;/);
   assert.match(heroSection, /const textBlockBottom = actionButtonY - \(config\.layout\.isMobile \? 16 : 18\);/);
   assert.match(heroSection, /title\.setY\(titleY\);/);
-  assert.doesNotMatch(heroSection, /backgroundLayer/);
-  assert.doesNotMatch(heroSection, /getThemeSigilKey\(config\.theme\)/);
+  assert.match(heroSection, /const backgroundLogoWidth = config\.width \* 0\.5;/);
+  assert.match(heroSection, /const backgroundLogoHeight = cardHeight \* 0\.5;/);
+  assert.match(heroSection, /const backgroundLogoX = config\.width \/ 2;/);
+  assert.match(heroSection, /const backgroundLogoY = cardHeight \/ 2;/);
+  assert.match(heroSection, /const backgroundLogo = showBackgroundLogo/);
+  assert.match(heroSection, /getThemeSigilKey\(config\.theme\)/);
+  assert.match(heroSection, /const backgroundLogoScale = Math\.min\(backgroundLogoWidth \/ backgroundLogo\.width,\s*backgroundLogoHeight \/ backgroundLogo\.height\);/);
+  assert.match(heroSection, /backgroundLogo\.setScale\(backgroundLogoScale\)/);
+  assert.doesNotMatch(heroSection, /backgroundLogo\.setDisplaySize\(/);
+  assert.match(heroSection, /backgroundLogo\.setTint\(style\.accent\)/);
+  assert.match(heroSection, /const backgroundLogoMaskShape = showBackgroundLogo \? scene\.make\.graphics\(\{ x: config\.x, y: config\.y, add: false \}\) : null;/);
+  assert.match(heroSection, /const backgroundLogoMask = backgroundLogoMaskShape \? backgroundLogoMaskShape\.createGeometryMask\(\) : null;/);
+  assert.match(heroSection, /backgroundLogo\.setMask\(backgroundLogoMask\)/);
+  assert.match(heroSection, /const backgroundShade = showBackgroundLogo \? scene\.add\.graphics\(\) : null;/);
+  assert.doesNotMatch(heroSection, /backgroundShade\.fillCircle\(/);
+  assert.doesNotMatch(heroSection, /backgroundShade\.fillStyle\(style\.glow,\s*0\.12\);/);
+  assert.match(heroSection, /const backgroundFooterFade = showBackgroundLogo \? scene\.add\.graphics\(\) : null;/);
+  assert.match(heroSection, /backgroundFooterFade\.fillGradientStyle\(/);
+  assert.match(heroSection, /container\.add\(\[\s*panel,\s*\.\.\.\(backgroundLogo \? \[backgroundLogo\] : \[\]\),\s*\.\.\.\(backgroundShade \? \[backgroundShade\] : \[\]\),\s*\.\.\.\(backgroundFooterFade \? \[backgroundFooterFade\] : \[\]\),/);
 });
 
 test("shop scene offsets helper copy below the status strips before laying out the grid", () => {

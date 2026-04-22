@@ -293,9 +293,10 @@ function createThemeHeroCard(scene, config) {
   const style = config.style;
   const isCompact = Boolean(config.compact);
   const usesDesktopActionLane = !isCompact && !config.layout.isMobile;
+  const showBackgroundLogo = true;
   const contentWidth = config.width - 40;
   const cardHeight = config.height;
-  const descriptionText = config.layout.isMobile ? "" : config.description;
+  const descriptionText = config.layout.isMobile ? (config.mobileDescription ?? config.description) : config.description;
   const desktopActionLaneWidth = usesDesktopActionLane ? 228 : 0;
   const textWrapWidth = contentWidth - (isCompact ? 8 : 146) - desktopActionLaneWidth;
 
@@ -308,6 +309,53 @@ function createThemeHeroCard(scene, config) {
   panel.strokeRoundedRect(0, 0, config.width, cardHeight, 30);
   panel.lineStyle(1, 0xffffff, 0.06);
   panel.strokeRoundedRect(12, 12, config.width - 24, cardHeight - 24, 22);
+
+  const backgroundLogoWidth = config.width * 0.5;
+  const backgroundLogoHeight = cardHeight * 0.5;
+  const backgroundLogoX = config.width / 2;
+  const backgroundLogoY = cardHeight / 2;
+  const backgroundLogo = showBackgroundLogo
+    ? scene.add
+        .image(backgroundLogoX, backgroundLogoY, getThemeSigilKey(config.theme))
+        .setOrigin(0.5)
+        .setAlpha(0.16)
+    : null;
+  const backgroundLogoMaskShape = showBackgroundLogo ? scene.make.graphics({ x: config.x, y: config.y, add: false }) : null;
+  const backgroundLogoMask = backgroundLogoMaskShape ? backgroundLogoMaskShape.createGeometryMask() : null;
+  const backgroundShade = showBackgroundLogo ? scene.add.graphics() : null;
+  const backgroundFooterFade = showBackgroundLogo ? scene.add.graphics() : null;
+
+  if (backgroundLogoMaskShape) {
+    backgroundLogoMaskShape.fillStyle(0xffffff, 1);
+    backgroundLogoMaskShape.fillRoundedRect(0, 0, config.width, cardHeight, 30);
+  }
+
+  if (backgroundLogo) {
+    const backgroundLogoScale = Math.min(backgroundLogoWidth / backgroundLogo.width, backgroundLogoHeight / backgroundLogo.height);
+    backgroundLogo.setScale(backgroundLogoScale);
+    backgroundLogo.setTint(style.accent);
+    backgroundLogo.setMask(backgroundLogoMask);
+  }
+
+  if (backgroundShade) {
+    backgroundShade.fillStyle(0x040806, 0.44);
+    backgroundShade.fillRoundedRect(0, 0, config.width, cardHeight, 30);
+  }
+
+  if (backgroundFooterFade) {
+    const footerFadeTop = Math.max(0, cardHeight - 176);
+    backgroundFooterFade.fillGradientStyle(
+      style.footerFill,
+      style.footerFill,
+      style.footerFill,
+      style.footerFill,
+      0,
+      0,
+      0.94,
+      0.94,
+    );
+    backgroundFooterFade.fillRoundedRect(0, footerFadeTop, config.width, cardHeight - footerFadeTop, 30);
+  }
 
   const statusLabel = config.locked
     ? "ENTRY LOCKED"
@@ -410,6 +458,9 @@ function createThemeHeroCard(scene, config) {
 
   container.add([
     panel,
+    ...(backgroundLogo ? [backgroundLogo] : []),
+    ...(backgroundShade ? [backgroundShade] : []),
+    ...(backgroundFooterFade ? [backgroundFooterFade] : []),
     labelChip,
     statusChip,
     stageChip,
@@ -464,15 +515,16 @@ export class CampaignScene extends Phaser.Scene {
     const selectedStageNumbers = getThemeStageNumbers(selectedTheme);
     const selectedClearedCount = getThemeProgress(session, selectedTheme);
     const isCompactCampaignLayout = layout.width <= COMPACT_CAMPAIGN_BREAKPOINT;
+    const headerTitle = "";
 
     createBackdrop(this, layout, { fillTop: 0x12211b, fillBottom: 0x09100c, accent: selectedStyle.accent });
 
-    createTitleLockup(
+    const titleLockup = createTitleLockup(
       this,
       layout.centerX,
       layout.header.top + 2,
       "CAMPAIGN MAP",
-      selectedTheme,
+      headerTitle,
       {
         kickerColor: selectedStyle.accentText,
         kickerSize: layout.isMobile ? 14 : 20,
@@ -484,7 +536,7 @@ export class CampaignScene extends Phaser.Scene {
     if (layout.isMobile) {
       const chipGap = 8;
       const chipWidth = Math.floor((layout.contentWidth - chipGap * 2) / 3);
-      const chipY = layout.focus.top + 4;
+      const chipY = titleLockup.kickerText.y + titleLockup.kickerText.height + 20;
       const heroY = chipY + 58;
       const heroHeight = Math.max(0, layout.focus.bottom - heroY - 8);
 
