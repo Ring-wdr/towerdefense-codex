@@ -443,7 +443,7 @@ test("shop scene renders combat unlock cards with a dedicated category style", (
 });
 
 test("campaign scene adds a compact hero tier for mid-width layouts", () => {
-  const heroSection = campaignSceneSource.match(/function createThemeHeroCard[\s\S]*?return container;\n\}/)?.[0] ?? "";
+  const heroSection = campaignSceneSource.match(/function createThemeHeroCard[\s\S]*?return container;\r?\n\}/)?.[0] ?? "";
 
   assert.match(campaignSceneSource, /const isCompactCampaignLayout = layout\.width <= COMPACT_CAMPAIGN_BREAKPOINT;/);
   assert.match(campaignSceneSource, /compact:\s*isCompactCampaignLayout/);
