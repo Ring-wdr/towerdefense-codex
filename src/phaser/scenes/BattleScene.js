@@ -28,6 +28,7 @@ import {
   findTowerAt,
   getEnemyPosition,
   getPathCells,
+  getTowerStats,
   getUpgradeCost,
   GRID_COLS,
   GRID_ROWS,
@@ -800,6 +801,7 @@ export class BattleScene extends Phaser.Scene {
     this.graphics.clear();
     this.drawBoard();
     this.syncBoardTiles();
+    this.drawTowerRanges();
     this.drawGrid();
     this.drawCursor();
     this.drawTowerBadges();
@@ -868,6 +870,28 @@ export class BattleScene extends Phaser.Scene {
     for (let row = 0; row <= GRID_ROWS; row += 1) {
       const y = this.boardOffset.y + row * this.scaledCellSize;
       this.graphics.lineBetween(this.boardOffset.x, y, this.boardOffset.x + this.scaledBoardWidth, y);
+    }
+  }
+
+  drawTowerRanges() {
+    const selectedTowerId = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y)?.id ?? null;
+
+    for (const tower of this.state.towers) {
+      const stats = getTowerStats(tower, this.state.metaProgress);
+      if (stats.range <= 0) {
+        continue;
+      }
+
+      const fillColor = Phaser.Display.Color.HexStringToColor(TOWER_TYPES[tower.type].color).color;
+      const isSelected = tower.id === selectedTowerId;
+      const x = this.boardOffset.x + tower.x * this.scaledCellSize + this.scaledCellSize / 2;
+      const y = this.boardOffset.y + tower.y * this.scaledCellSize + this.scaledCellSize / 2;
+      const radius = this.scaleLength(stats.range * CELL_SIZE);
+
+      this.graphics.fillStyle(fillColor, isSelected ? 0.22 : 0.12);
+      this.graphics.fillCircle(x, y, radius);
+      this.graphics.lineStyle(isSelected ? 3 : 2, fillColor, isSelected ? 0.82 : 0.42);
+      this.graphics.strokeCircle(x, y, radius);
     }
   }
 

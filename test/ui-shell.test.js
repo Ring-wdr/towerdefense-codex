@@ -369,6 +369,13 @@ test("battle scene routes boss sprites by stage theme", () => {
   assert.match(battleSceneSource, /getBossFrameRect\(enemy\)\s*\{[\s\S]*return enemy\.defeated \? themeFrames\?\.death[\s\S]*: themeFrames\?\.idle/);
 });
 
+test("battle scene imports tower stat lookup for range overlays", () => {
+  assert.match(
+    battleSceneSource,
+    /import\s*\{[\s\S]*getTowerStats,[\s\S]*\}\s*from "\.\.\/\.\.\/game\/logic\.js";/,
+  );
+});
+
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
@@ -424,6 +431,24 @@ test("battle scene keeps the hud compact and biases the field upward", () => {
   assert.match(battleSceneSource, /this\.hudText\.setText\(\s*\[/);
   assert.doesNotMatch(battleSceneSource, /`Status \$\{this\.state\.status\}`/);
   assert.doesNotMatch(battleSceneSource, /this\.helpText\.setText\(/);
+});
+
+test("battle scene renders tower range overlays and emphasizes the selected tower", () => {
+  const renderSceneBody = extractMethodBody(battleSceneSource, "renderScene");
+  const drawTowerRangesBody = extractMethodBody(battleSceneSource, "drawTowerRanges");
+
+  assert.ok(renderSceneBody);
+  assert.ok(drawTowerRangesBody);
+  assert.match(renderSceneBody, /this\.drawTowerRanges\(\);/);
+  assert.match(drawTowerRangesBody, /const selectedTowerId = findTowerAt\(this\.state,\s*this\.state\.cursor\.x,\s*this\.state\.cursor\.y\)\?\.id \?\? null;/);
+  assert.match(drawTowerRangesBody, /const stats = getTowerStats\(tower,\s*this\.state\.metaProgress\);/);
+  assert.match(drawTowerRangesBody, /const radius = this\.scaleLength\(stats\.range \* CELL_SIZE\);/);
+  assert.match(drawTowerRangesBody, /const isSelected = tower\.id === selectedTowerId;/);
+  assert.match(drawTowerRangesBody, /Phaser\.Display\.Color\.HexStringToColor\(TOWER_TYPES\[tower\.type\]\.color\)\.color/);
+  assert.match(drawTowerRangesBody, /this\.graphics\.fillStyle\(fillColor,\s*isSelected \? 0\.2[0-9]* : 0\.1[0-9]*\);/);
+  assert.match(drawTowerRangesBody, /this\.graphics\.lineStyle\(isSelected \? 3 : 2,\s*fillColor,\s*isSelected \? 0\.[0-9]+ : 0\.[0-9]+\);/);
+  assert.match(drawTowerRangesBody, /this\.graphics\.fillCircle\(x,\s*y,\s*radius\);/);
+  assert.match(drawTowerRangesBody, /this\.graphics\.strokeCircle\(x,\s*y,\s*radius\);/);
 });
 
 test("battle hud uses symbol labels for lives and gold", () => {
