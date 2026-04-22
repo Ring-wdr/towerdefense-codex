@@ -165,13 +165,14 @@ export class ShopScene extends Phaser.Scene {
       valueSize: layout.isMobile ? 20 : 24,
     });
 
+    const helperTextY = stripY + (layout.isMobile ? 52 : 60);
     this.add
-      .text(layout.centerX, layout.focus.top + (layout.isMobile ? 2 : 8), "영구 보급을 정비해 다음 전투의 기본 전력을 끌어올린다.", createBodyTextStyle({
+      .text(layout.centerX, helperTextY, "영구 보급을 정비해 다음 전투의 기본 전력을 끌어올린다.", createBodyTextStyle({
         color: "#d8d1c4",
         fontFamily: PHASER_TEXT_FONTS.body,
         fontSize: `${layout.isMobile ? 15 : 18}px`,
         align: "center",
-        wordWrap: { width: layout.contentWidth - (layout.isMobile ? 24 : 140) },
+        wordWrap: { width: layout.contentWidth - (layout.isMobile ? 24 : 220) },
       }))
       .setOrigin(0.5, 0);
 
@@ -180,7 +181,7 @@ export class ShopScene extends Phaser.Scene {
     const gapX = layout.isMobile ? 10 : 16;
     const gapY = layout.isMobile ? 10 : 14;
     const gridWidth = layout.contentWidth;
-    const gridTop = layout.focus.top + (layout.isMobile ? 42 : 56);
+    const gridTop = helperTextY + (layout.isMobile ? 34 : 40);
     const gridHeight = Math.max(0, layout.focus.bottom - gridTop - (layout.isMobile ? 8 : 10));
     const cardWidth = Math.floor((gridWidth - gapX * (columns - 1)) / columns);
     const cardHeight = Math.max(layout.isMobile ? 82 : 96, Math.floor((gridHeight - gapY * (rows - 1)) / rows));

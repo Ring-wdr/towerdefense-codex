@@ -61,26 +61,6 @@ export class TitleScene extends Phaser.Scene {
       },
     );
 
-    this.add
-      .text(
-        layout.centerX,
-        lockup.titleText.y + lockup.titleText.height + (isCompactTitle ? 14 : layout.isMobile ? 22 : 28),
-        isCompactTitle
-          ? "전선을 훑고 진입할 전구를 고른다."
-          : "전선을 훑고 진입할 전구를 고른다. 브리핑이 끝나면 전투를 개시한다.",
-        {
-          ...createBodyTextStyle({
-          color: "#d9d1c4",
-          fontFamily: PHASER_TEXT_FONTS.body,
-          fontSize: `${isCompactTitle ? (layout.isMobile ? 16 : 20) : layout.isMobile ? 18 : 24}px`,
-          align: "center",
-          wordWrap: { width: layout.contentWidth - (layout.isMobile ? 28 : 180) },
-          lineSpacing: isCompactTitle ? 5 : 8,
-        }),
-        },
-      )
-      .setOrigin(0.5, 0);
-
     if (!isCompactTitle) {
       const crestY = lockup.titleText.y + lockup.titleText.height + (layout.isMobile ? 132 : 164);
       const crest = this.add.image(layout.centerX, crestY, TITLE_COMMAND_CREST_KEY).setOrigin(0.5);

@@ -406,11 +406,11 @@ test("scene and overlay copy use the refreshed briefing voice", () => {
   assert.match(battleSceneSource, /Cannot deploy here/);
   assert.doesNotMatch(battleSceneSource, /Tile unavailable for the selected tower/);
 
-  assert.match(titleSceneSource, /전선을 훑고 진입할 전구를 고른다\./);
-  assert.match(titleSceneSource, /브리핑이 끝나면 전투를 개시한다\./);
+  assert.doesNotMatch(titleSceneSource, /전선을 훑고 진입할 전구를 고른다\./);
+  assert.doesNotMatch(titleSceneSource, /브리핑이 끝나면 전투를 개시한다\./);
   assert.match(titleSceneSource, /단일 캠페인 루트\. 각 전선은 순차적으로 개방된다\./);
 
-  assert.match(campaignSceneSource, /전구를 전환해 현재 전선을 확인한 뒤 브리핑으로 진입한다\./);
+  assert.doesNotMatch(campaignSceneSource, /전구를 전환해 현재 전선을 확인한 뒤 브리핑으로 진입한다\./);
   assert.doesNotMatch(campaignSceneSource, /Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen\./);
 
   assert.match(themeSceneSource, /\$\{stage\.theme\} 전선/);
@@ -440,6 +440,27 @@ test("draft overlay separates summary, description, and action rows on compact c
 
 test("shop scene renders combat unlock cards with a dedicated category style", () => {
   assert.match(shopSceneSource, /combat/);
+});
+
+test("campaign scene adds a compact hero tier for mid-width layouts", () => {
+  const heroSection = campaignSceneSource.match(/function createThemeHeroCard[\s\S]*?return container;\n\}/)?.[0] ?? "";
+
+  assert.match(campaignSceneSource, /const isCompactCampaignLayout = layout\.width <= COMPACT_CAMPAIGN_BREAKPOINT;/);
+  assert.match(campaignSceneSource, /compact:\s*isCompactCampaignLayout/);
+  assert.match(heroSection, /const descriptionText = config\.layout\.isMobile \? "" : config\.description;/);
+  assert.match(heroSection, /const actionButtonWidth = isCompact \? config\.width - 48 : config\.layout\.isMobile \? 132 : 152;/);
+  assert.match(heroSection, /const desktopActionLaneWidth = usesDesktopActionLane \? 228 : 0;/);
+  assert.match(heroSection, /const actionButtonY = cardHeight - actionButtonHeight - 24;/);
+  assert.match(heroSection, /const textBlockBottom = actionButtonY - \(config\.layout\.isMobile \? 16 : 18\);/);
+  assert.match(heroSection, /title\.setY\(titleY\);/);
+  assert.doesNotMatch(heroSection, /backgroundLayer/);
+  assert.doesNotMatch(heroSection, /getThemeSigilKey\(config\.theme\)/);
+});
+
+test("shop scene offsets helper copy below the status strips before laying out the grid", () => {
+  assert.match(shopSceneSource, /const helperTextY = stripY \+ \(layout\.isMobile \? 52 : 60\);/);
+  assert.match(shopSceneSource, /const gridTop = helperTextY \+ \(layout\.isMobile \? 34 : 40\);/);
+  assert.match(shopSceneSource, /wordWrap: \{ width: layout\.contentWidth - \(layout\.isMobile \? 24 : 220\) \}/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
