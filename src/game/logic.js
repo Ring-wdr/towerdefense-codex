@@ -7,6 +7,12 @@ import {
   getStageWaveDefinition,
   isStageRoadCell,
 } from "./stages.js";
+import {
+  createRunModifiers,
+  getBattlePerkDefinition,
+  getUnlockedBattlePerkIds,
+  normalizeRunModifiers,
+} from "./battle-perks.js";
 import { getMetaBattleModifiers } from "./meta-battle-modifiers.js";
 import { createMetaProgress, normalizeMetaProgress } from "./meta-progress.js";
 
@@ -16,6 +22,7 @@ export const CELL_SIZE = 60;
 export const TICK_MS = 100;
 export const MAX_TOWER_LEVEL = 3;
 export const INTERMISSION_TICKS = 300;
+export const DRAFT_INTERMISSION_TICKS = 30;
 export const ENEMY_DEFEAT_TICKS = 10;
 
 export const TOWER_TYPES = {
@@ -119,6 +126,8 @@ export const ENEMY_SPECIES = {
   },
 };
 
+export { getUnlockedBattlePerkIds } from "./battle-perks.js";
+
 export function createInitialState(stage = 1, metaProgress = createMetaProgress()) {
   const normalizedMetaProgress = normalizeMetaProgress(metaProgress);
   const metaModifiers = getMetaBattleModifiers(normalizedMetaProgress);
@@ -133,7 +142,11 @@ export function createInitialState(stage = 1, metaProgress = createMetaProgress(
     nextAttackEffectId: 1,
     nextEnemyId: 1,
     nextTowerId: 1,
+    draftChoices: [],
+    draftHistory: [],
+    lastDraftSummary: "",
     score: 0,
+    runModifiers: createRunModifiers(),
     selectedTowerType: "attack",
     spawnedInWave: 0,
     stage,
@@ -349,7 +362,11 @@ export function getWaveDefinition(stageNumber, waveNumber = null) {
   return getStageWaveDefinition(stageNumber, waveNumber);
 }
 
-export function getTowerStats(tower, metaProgress = createMetaProgress()) {
+export function getTowerStats(
+  tower,
+  metaProgress = createMetaProgress(),
+  runModifiers = createRunModifiers(),
+) {
   const levelBonus = tower.level - 1;
   let stats;
 
@@ -457,7 +474,58 @@ export function getTowerStats(tower, metaProgress = createMetaProgress()) {
       break;
   }
 
-  return applyMetaBattleBonuses(stats, tower.type, metaProgress);
+  return applyMetaBattleBonuses(stats, tower.type, metaProgress, runModifiers);
+}
+
+export function rollBattleDraftChoices(
+  state,
+  unlockedPerkIds = getUnlockedBattlePerkIds(state.metaProgress),
+  random = Math.random,
+) {
+  const pool = Array.from(new Set(unlockedPerkIds))
+    .map((perkId) => getBattlePerkDefinition(perkId))
+    .filter(Boolean)
+    .map((perk) => ({
+      id: perk.id,
+      title: perk.title,
+      description: perk.description,
+      summary: perk.summary,
+    }));
+
+  const available = [...pool];
+  const choices = [];
+  const count = Math.min(3, available.length);
+
+  for (let index = 0; index < count; index += 1) {
+    const choiceIndex = Math.min(
+      available.length - 1,
+      Math.floor(Math.max(0, random()) * available.length),
+    );
+    choices.push(available.splice(choiceIndex, 1)[0]);
+  }
+
+  return choices;
+}
+
+export function applyBattleDraftChoice(state, perkId) {
+  if (state.status !== "draft") {
+    return state;
+  }
+
+  const perk = getBattlePerkDefinition(perkId);
+  const hasChoice = state.draftChoices.some((choice) => choice.id === perkId);
+  if (!perk || !hasChoice) {
+    return state;
+  }
+
+  const next = structuredClone(state);
+  next.runModifiers = normalizeRunModifiers(next.runModifiers);
+  perk.applyToState(next);
+  next.draftChoices = [];
+  next.draftHistory.push(perkId);
+  next.status = "intermission";
+  next.intermissionTicks = DRAFT_INTERMISSION_TICKS;
+  return next;
 }
 
 export function resolveDamageAgainstEnemy(enemy, attack, scale = 1) {
@@ -574,7 +642,7 @@ function runTowers(state) {
       continue;
     }
 
-    const stats = getTowerStats(tower, state.metaProgress);
+    const stats = getTowerStats(tower, state.metaProgress, state.runModifiers);
     const targets = selectTargetsForTower(state.enemies, tower, stats);
     if (!targets.length) {
       continue;
@@ -752,6 +820,8 @@ function maybeAdvanceWave(state) {
     state.wave += 1;
     state.spawnedInWave = 0;
     state.nextSpawnTick = state.tick + 18;
+    state.status = "draft";
+    state.draftChoices = rollBattleDraftChoices(state);
     return;
   }
 
@@ -785,8 +855,9 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
+function applyMetaBattleBonuses(baseStats, towerType, metaProgress, runModifiers) {
   const modifiers = getMetaBattleModifiers(metaProgress);
+  const ephemeral = normalizeRunModifiers(runModifiers);
   const stats = {
     ...baseStats,
     bonusBySpecies: { ...baseStats.bonusBySpecies },
@@ -804,6 +875,7 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
         modifiers.attackSpeedBonus,
         modifiers.attackSpeedBonusStep,
       );
+      stats.cooldown = Math.max(1, stats.cooldown - ephemeral.rapidReloadBonus);
       break;
     case "slow":
       stats.slowFactor = clamp(
@@ -811,12 +883,21 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
         0.1,
         1,
       );
+      stats.slowFactor = clamp(
+        roundToHundredths(stats.slowFactor * (1 - ephemeral.slowFactorBonus)),
+        0.1,
+        1,
+      );
+      stats.slowTicks += ephemeral.slowExtraTicks;
       break;
     case "magic":
       stats.damage = scaleDamage(stats.damage, 1 + modifiers.magicDamageMultiplier);
+      stats.targetCount += ephemeral.magicTargetCountBonus;
       break;
     case "cannon":
       stats.damage = scaleDamage(stats.damage, 1 + modifiers.cannonDamageMultiplier);
+      stats.damage = scaleDamage(stats.damage, 1 + ephemeral.cannonDamageMultiplier);
+      stats.splashRadius = roundToHundredths(stats.splashRadius + ephemeral.cannonSplashRadiusBonus);
       break;
     case "hunter":
       stats.cooldown = reduceCooldown(
@@ -824,6 +905,7 @@ function applyMetaBattleBonuses(baseStats, towerType, metaProgress) {
         modifiers.hunterSpeedBonus,
         modifiers.hunterSpeedBonusStep,
       );
+      stats.cooldown = Math.max(1, stats.cooldown - ephemeral.rapidReloadBonus);
       break;
     default:
       break;

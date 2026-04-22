@@ -21,6 +21,11 @@ test("createMetaProgress returns the default permanent progression state", () =>
   assert.deepEqual(createMetaProgress(), {
     currency: 0,
     highestClearedStage: 0,
+    combatUnlocks: {
+      blastTuningUnlock: 0,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 0,
       globalMaxLives: 0,
@@ -40,6 +45,9 @@ test("normalizeMetaProgress fills in missing upgrade keys without dropping store
     normalizeMetaProgress({
       currency: 18,
       highestClearedStage: 5,
+      combatUnlocks: {
+        chainSurgeUnlock: 1,
+      },
       upgrades: {
         globalStartGold: 2,
         attackTowerSpeed: 3,
@@ -48,6 +56,11 @@ test("normalizeMetaProgress fills in missing upgrade keys without dropping store
     {
       currency: 18,
       highestClearedStage: 5,
+      combatUnlocks: {
+        blastTuningUnlock: 0,
+        chainSurgeUnlock: 1,
+        deepFreezeUnlock: 0,
+      },
       upgrades: {
         globalStartGold: 2,
         globalMaxLives: 0,
@@ -68,6 +81,12 @@ test("normalizeMetaProgress coerces malformed upgrade values and ignores unknown
     normalizeMetaProgress({
       currency: "12",
       highestClearedStage: Infinity,
+      combatUnlocks: {
+        blastTuningUnlock: 2,
+        chainSurgeUnlock: "nope",
+        deepFreezeUnlock: -1,
+        extraUnlock: 8,
+      },
       upgrades: {
         globalStartGold: "7",
         globalMaxLives: -3,
@@ -84,6 +103,11 @@ test("normalizeMetaProgress coerces malformed upgrade values and ignores unknown
     {
       currency: 0,
       highestClearedStage: 0,
+      combatUnlocks: {
+        blastTuningUnlock: 2,
+        chainSurgeUnlock: 0,
+        deepFreezeUnlock: 0,
+      },
       upgrades: {
         globalStartGold: 0,
         globalMaxLives: 0,
@@ -114,6 +138,9 @@ test("saveMetaProgress persists normalized JSON and loadMetaProgress restores it
     {
       currency: 7,
       highestClearedStage: 3,
+      combatUnlocks: {
+        blastTuningUnlock: 1,
+      },
       upgrades: {
         attackTowerDamage: 4,
       },
@@ -124,6 +151,11 @@ test("saveMetaProgress persists normalized JSON and loadMetaProgress restores it
   assert.deepEqual(saved, {
     currency: 7,
     highestClearedStage: 3,
+    combatUnlocks: {
+      blastTuningUnlock: 1,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 0,
       globalMaxLives: 0,

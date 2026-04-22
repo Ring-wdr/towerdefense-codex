@@ -18,6 +18,7 @@ import slowTowerSpriteUrl from "../../assets/towers/slow-v2.png";
 import swarmlingEnemySpriteUrl from "../../assets/enemies/swarmling-v2.png";
 import wispEnemySpriteUrl from "../../assets/enemies/wisp-v2.png";
 import {
+  applyBattleDraftChoice,
   buildTowerAtCursor,
   canBuildTower,
   CELL_SIZE,
@@ -473,6 +474,10 @@ export class BattleScene extends Phaser.Scene {
     this.renderScene();
   }
 
+  resolveDraftChoice(perkId) {
+    this.applyState(applyBattleDraftChoice(this.state, perkId));
+  }
+
   persistStageClearRewards(stageNumber) {
     const metaProgress = this.game.registry.get("metaProgress") ?? loadMetaProgress();
     const nextMetaProgress = awardStageClearRewards(metaProgress, stageNumber);
@@ -679,6 +684,13 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    if (this.state.status === "draft") {
+      this.openOverlay("draft", {
+        choices: this.state.draftChoices,
+      });
+      return;
+    }
+
     if (this.state.status === "stage-cleared") {
       const session = getSession(this);
       const completedStage = getCompletedBattleStage(session, this.state);
@@ -710,11 +722,12 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  openOverlay(mode) {
+  openOverlay(mode, data = {}) {
     this.setBattleControlsVisible(false);
     this.scene.launch("OverlayScene", {
       mode,
       stage: this.state.stage,
+      ...data,
     });
     this.scene.pause();
   }
@@ -877,7 +890,7 @@ export class BattleScene extends Phaser.Scene {
     const selectedTowerId = findTowerAt(this.state, this.state.cursor.x, this.state.cursor.y)?.id ?? null;
 
     for (const tower of this.state.towers) {
-      const stats = getTowerStats(tower, this.state.metaProgress);
+      const stats = getTowerStats(tower, this.state.metaProgress, this.state.runModifiers);
       if (stats.range <= 0) {
         continue;
       }
@@ -1220,10 +1233,15 @@ export class BattleScene extends Phaser.Scene {
         ? `Deploy ${selectedTower.name} • ${selectedTower.cost}G`
         : "Cannot deploy here";
 
-    this.hudText.setText([
+    const hudLines = [
       `Stage ${this.state.stage}  Wave ${this.state.wave}  ♥ ${this.state.lives}  💰 ${this.state.gold}`,
       `Tower ${selectedTower.name}  Cursor ${this.state.cursor.x},${this.state.cursor.y}  ${actionHint}`,
-    ]);
+    ];
+    if (this.state.lastDraftSummary) {
+      hudLines.push(`Boost ${this.state.lastDraftSummary}`);
+    }
+
+    this.hudText.setText(hudLines);
 
     if (this.state.status === "running") {
       this.statusText.setText("");

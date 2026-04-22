@@ -109,6 +109,39 @@ export const META_SHOP_CATALOG = [
       { price: 270, value: 0.15, unlockStage: 9 },
     ],
   },
+  {
+    id: "blastTuningUnlock",
+    category: "combat",
+    progressBucket: "combatUnlocks",
+    label: "Blast Tuning",
+    description: "전투 중 캐논 포열 조율 카드를 해금한다.",
+    maxLevel: 1,
+    levels: [
+      { price: 120, value: 1, unlockStage: 3 },
+    ],
+  },
+  {
+    id: "chainSurgeUnlock",
+    category: "combat",
+    progressBucket: "combatUnlocks",
+    label: "Chain Surge",
+    description: "전투 중 마법 연쇄 증폭 카드를 해금한다.",
+    maxLevel: 1,
+    levels: [
+      { price: 130, value: 1, unlockStage: 5 },
+    ],
+  },
+  {
+    id: "deepFreezeUnlock",
+    category: "combat",
+    progressBucket: "combatUnlocks",
+    label: "Deep Freeze",
+    description: "전투 중 감속 심화 카드를 해금한다.",
+    maxLevel: 1,
+    levels: [
+      { price: 140, value: 1, unlockStage: 6 },
+    ],
+  },
 ];
 
 const META_SHOP_CATALOG_BY_ID = new Map(
@@ -161,8 +194,9 @@ export function canPurchaseUpgrade(progress, upgradeId) {
     return false;
   }
 
+  const progressBucket = getProgressBucket(definition);
   const currentLevel = clampUpgradeLevelForIndex(
-    normalized.upgrades[upgradeId] ?? 0,
+    normalized[progressBucket][upgradeId] ?? 0,
     definition.maxLevel,
   );
   const nextLevel = definition.levels[currentLevel];
@@ -184,8 +218,9 @@ export function purchaseUpgrade(progress, upgradeId) {
 
   const normalized = normalizeMetaProgress(progress);
   const definition = META_SHOP_CATALOG_BY_ID.get(upgradeId);
+  const progressBucket = getProgressBucket(definition);
   const currentLevel = clampUpgradeLevelForIndex(
-    normalized.upgrades[upgradeId] ?? 0,
+    normalized[progressBucket][upgradeId] ?? 0,
     definition.maxLevel,
   );
   const nextLevel = definition.levels[currentLevel];
@@ -193,9 +228,17 @@ export function purchaseUpgrade(progress, upgradeId) {
   return {
     ...normalized,
     currency: normalized.currency - nextLevel.price,
-    upgrades: {
-      ...normalized.upgrades,
-      [upgradeId]: currentLevel + 1,
+    [progressBucket]: {
+      ...normalized[progressBucket],
+      [upgradeId]: Math.min(currentLevel + 1, definition.maxLevel),
     },
   };
+}
+
+function getProgressBucket(definition) {
+  if (definition?.progressBucket === "combatUnlocks") {
+    return "combatUnlocks";
+  }
+
+  return "upgrades";
 }

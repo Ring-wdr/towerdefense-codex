@@ -133,6 +133,36 @@ test("stage rewards scale upward with later clears", () => {
           { price: 270, value: 0.15, unlockStage: 9 },
         ],
       },
+      {
+        id: "blastTuningUnlock",
+        category: "combat",
+        label: "Blast Tuning",
+        description: "전투 중 캐논 포열 조율 카드를 해금한다.",
+        maxLevel: 1,
+        levels: [
+          { price: 120, value: 1, unlockStage: 3 },
+        ],
+      },
+      {
+        id: "chainSurgeUnlock",
+        category: "combat",
+        label: "Chain Surge",
+        description: "전투 중 마법 연쇄 증폭 카드를 해금한다.",
+        maxLevel: 1,
+        levels: [
+          { price: 130, value: 1, unlockStage: 5 },
+        ],
+      },
+      {
+        id: "deepFreezeUnlock",
+        category: "combat",
+        label: "Deep Freeze",
+        description: "전투 중 감속 심화 카드를 해금한다.",
+        maxLevel: 1,
+        levels: [
+          { price: 140, value: 1, unlockStage: 6 },
+        ],
+      },
     ],
   );
 });
@@ -173,6 +203,11 @@ test("purchaseUpgrade spends currency and advances exactly one level", () => {
   assert.deepEqual(next, {
     currency: 80,
     highestClearedStage: 4,
+    combatUnlocks: {
+      blastTuningUnlock: 0,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 2,
       globalMaxLives: 0,
@@ -218,6 +253,11 @@ test("purchaseUpgrade returns the original progress when a tier is locked or max
   assert.deepEqual(purchaseUpgrade(malformedProgress, "globalStartGold"), {
     currency: 790,
     highestClearedStage: 9,
+    combatUnlocks: {
+      blastTuningUnlock: 0,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 3,
       globalMaxLives: 0,
@@ -247,6 +287,11 @@ test("awardStageClearRewards adds stage currency and only raises highestClearedS
   assert.deepEqual(progressed, {
     currency: 55 + getMetaRewardForStage(4),
     highestClearedStage: 4,
+    combatUnlocks: {
+      blastTuningUnlock: 0,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 1,
       globalMaxLives: 0,
@@ -265,6 +310,11 @@ test("awardStageClearRewards adds stage currency and only raises highestClearedS
   assert.deepEqual(repeated, {
     currency: 55 + getMetaRewardForStage(4) + getMetaRewardForStage(3),
     highestClearedStage: 4,
+    combatUnlocks: {
+      blastTuningUnlock: 0,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
     upgrades: {
       globalStartGold: 1,
       globalMaxLives: 0,
@@ -276,5 +326,26 @@ test("awardStageClearRewards adds stage currency and only raises highestClearedS
       cannonTowerDamage: 0,
       hunterTowerSpeed: 0,
     },
+  });
+});
+
+test("combat unlock purchases write into combatUnlocks instead of tower stat upgrades", () => {
+  const progress = {
+    ...createMetaProgress(),
+    currency: 500,
+    highestClearedStage: 9,
+  };
+
+  const next = purchaseUpgrade(progress, "blastTuningUnlock");
+
+  assert.deepEqual(next, {
+    currency: 380,
+    highestClearedStage: 9,
+    combatUnlocks: {
+      blastTuningUnlock: 1,
+      chainSurgeUnlock: 0,
+      deepFreezeUnlock: 0,
+    },
+    upgrades: createMetaProgress().upgrades,
   });
 });

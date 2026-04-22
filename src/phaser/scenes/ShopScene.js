@@ -26,6 +26,10 @@ function getMetaProgress(scene) {
   return scene.game.registry.get("metaProgress") ?? loadMetaProgress();
 }
 
+function getProgressBucket(upgrade) {
+  return upgrade.progressBucket === "combatUnlocks" ? "combatUnlocks" : "upgrades";
+}
+
 function hideBattleControls() {
   const controls = document.getElementById("battle-controls");
   if (controls) {
@@ -59,8 +63,9 @@ function clampRenderableUpgradeLevel(value, maxLevel) {
 
 export function getShopEntryState(metaProgress, upgrade) {
   const normalizedProgress = normalizeMetaProgress(metaProgress);
+  const progressBucket = getProgressBucket(upgrade);
   const currentLevel = clampRenderableUpgradeLevel(
-    normalizedProgress.upgrades[upgrade.id] ?? 0,
+    normalizedProgress[progressBucket][upgrade.id] ?? 0,
     upgrade.maxLevel,
   );
   const nextLevel = upgrade.levels[currentLevel] ?? null;
@@ -189,8 +194,16 @@ export class ShopScene extends Phaser.Scene {
       const summary = getShopEntryState(metaProgress, upgrade);
 
       createPanel(this, x, y, cardWidth, cardHeight, {
-        fill: upgrade.category === "global" ? 0x211912 : 0x16231c,
-        stroke: upgrade.category === "global" ? 0xd6ae72 : 0x8fb095,
+        fill: upgrade.category === "global"
+          ? 0x211912
+          : upgrade.category === "combat"
+            ? 0x1a1827
+            : 0x16231c,
+        stroke: upgrade.category === "global"
+          ? 0xd6ae72
+          : upgrade.category === "combat"
+            ? 0x92a0ff
+            : 0x8fb095,
       });
 
       this.add
@@ -205,7 +218,7 @@ export class ShopScene extends Phaser.Scene {
 
       this.add
         .text(x + 12, y + (layout.isMobile ? 36 : 40), `Lv ${summary.currentLevel}/${upgrade.maxLevel}`, createHeadingTextStyle({
-          color: "#d6ae72",
+          color: upgrade.category === "combat" ? "#b9c3ff" : "#d6ae72",
           fontFamily: PHASER_TEXT_FONTS.heading,
           fontSize: `${layout.isMobile ? 16 : 20}px`,
           strokeThickness: 3,

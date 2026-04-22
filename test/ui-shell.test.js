@@ -9,6 +9,7 @@ const phaserGameSource = readFileSync(new URL("../src/phaser/game.js", import.me
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
 const campaignSceneSource = readFileSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
+const shopSceneSource = readFileSync(new URL("../src/phaser/scenes/ShopScene.js", import.meta.url), "utf8");
 const themeSceneSource = readFileSync(new URL("../src/phaser/scenes/ThemeScene.js", import.meta.url), "utf8");
 const titleSceneSource = readFileSync(new URL("../src/phaser/scenes/TitleScene.js", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
@@ -347,6 +348,16 @@ test("battle scene lets s start the next wave from keyboard during ready states"
   assert.match(handleKeyDownBody, /this\.applyState\(startGame\(this\.state\)\);/);
 });
 
+test("battle scene launches the draft overlay after normal wave clears and resolves choices back into battle", () => {
+  const handleStatusTransitionBody = extractMethodBody(battleSceneSource, "handleStatusTransition");
+
+  assert.ok(handleStatusTransitionBody);
+  assert.match(handleStatusTransitionBody, /if \(this\.state\.status === "draft"\) \{/);
+  assert.match(handleStatusTransitionBody, /this\.openOverlay\("draft"/);
+  assert.match(battleSceneSource, /resolveDraftChoice\(perkId\)/);
+  assert.match(battleSceneSource, /applyBattleDraftChoice\(this\.state,\s*perkId\)/);
+});
+
 test("battle scene routes boss sprites by stage theme", () => {
   assert.match(battleSceneSource, /import draculaBossSpriteUrl from "\.\.\/\.\.\/assets\/boss\/transparent\/dracula-boss-transparent\.png";/);
   assert.match(battleSceneSource, /import flameBossSpriteUrl from "\.\.\/\.\.\/assets\/boss\/transparent\/flame-boss-transparent\.png";/);
@@ -411,6 +422,24 @@ test("scene and overlay copy use the refreshed briefing voice", () => {
   assert.match(overlaySceneSource, /Stage \$\{stage\} 교전이 중지됐다\. 전투를 재개하거나 재정비 후 복귀할 수 있다\./);
   assert.match(overlaySceneSource, /Stage \$\{stage\} 방어선이 무너졌다\. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다\./);
   assert.match(overlaySceneSource, /Stage \$\{stage\} 확보 완료\. 이제 모든 전장을 캠페인에서 다시 선택할 수 있다\./);
+  assert.match(overlaySceneSource, /FIELD CHOICE/);
+  assert.match(overlaySceneSource, /다음 웨이브 전에 현장 보급 하나를 선택한다\./);
+});
+
+test("draft overlay separates summary, description, and action rows on compact cards", () => {
+  const renderDraftOverlayBody = extractMethodBody(overlaySceneSource, "renderDraftOverlay");
+
+  assert.ok(renderDraftOverlayBody);
+  assert.match(renderDraftOverlayBody, /const startY = frame\.panelY \+ \(frame\.isMobile \? 16[0-9] : 198\);/);
+  assert.match(renderDraftOverlayBody, /const summaryY = /);
+  assert.match(renderDraftOverlayBody, /const actionCenterY = /);
+  assert.match(renderDraftOverlayBody, /choice\.description/);
+  assert.match(renderDraftOverlayBody, /choice\.summary/);
+  assert.doesNotMatch(renderDraftOverlayBody, /y \+ 54,\s*choice\.description[\s\S]*y \+ cardHeight - \(frame\.isMobile \? 52 : 62\),\s*choice\.summary/);
+});
+
+test("shop scene renders combat unlock cards with a dedicated category style", () => {
+  assert.match(shopSceneSource, /combat/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
@@ -428,7 +457,8 @@ test("battle scene keeps the hud compact and biases the field upward", () => {
   assert.match(battleSceneSource, /this\.boardScale\s*=\s*viewport\.scale/);
   assert.match(battleSceneSource, /this\.scaledCellSize\s*=\s*CELL_SIZE \* viewport\.scale/);
   assert.match(battleSceneSource, /y:\s*viewport\.boardTop/);
-  assert.match(battleSceneSource, /this\.hudText\.setText\(\s*\[/);
+  assert.match(battleSceneSource, /const hudLines = \[/);
+  assert.match(battleSceneSource, /this\.hudText\.setText\(hudLines\)/);
   assert.doesNotMatch(battleSceneSource, /`Status \$\{this\.state\.status\}`/);
   assert.doesNotMatch(battleSceneSource, /this\.helpText\.setText\(/);
 });
@@ -441,7 +471,7 @@ test("battle scene renders tower range overlays and emphasizes the selected towe
   assert.ok(drawTowerRangesBody);
   assert.match(renderSceneBody, /this\.drawTowerRanges\(\);/);
   assert.match(drawTowerRangesBody, /const selectedTowerId = findTowerAt\(this\.state,\s*this\.state\.cursor\.x,\s*this\.state\.cursor\.y\)\?\.id \?\? null;/);
-  assert.match(drawTowerRangesBody, /const stats = getTowerStats\(tower,\s*this\.state\.metaProgress\);/);
+  assert.match(drawTowerRangesBody, /const stats = getTowerStats\(tower,\s*this\.state\.metaProgress,\s*this\.state\.runModifiers\);/);
   assert.match(drawTowerRangesBody, /const radius = this\.scaleLength\(stats\.range \* CELL_SIZE\);/);
   assert.match(drawTowerRangesBody, /const isSelected = tower\.id === selectedTowerId;/);
   assert.match(drawTowerRangesBody, /Phaser\.Display\.Color\.HexStringToColor\(TOWER_TYPES\[tower\.type\]\.color\)\.color/);

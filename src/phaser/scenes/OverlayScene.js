@@ -32,6 +32,11 @@ export class OverlayScene extends Phaser.Scene {
     };
 
     this.cameras.main.setBackgroundColor("rgba(6, 9, 8, 0.68)");
+    if (mode === "draft") {
+      this.renderDraftOverlay(frame, data.choices ?? []);
+      return;
+    }
+
     createPanel(this, frame.panelX, frame.panelY + 24, frame.panelWidth, Math.min(frame.panelHeight - 48, frame.isMobile ? 318 : 336), {
       fill: 0x111311,
       alpha: 0.92,
@@ -86,6 +91,126 @@ export class OverlayScene extends Phaser.Scene {
         this.input.keyboard?.off("keydown-ESC", escHandler);
       });
     }
+  }
+
+  renderDraftOverlay(frame, choices) {
+    const headingY = frame.panelY + (frame.isMobile ? 42 : 52);
+    const titleY = frame.panelY + (frame.isMobile ? 70 : 82);
+    const introY = frame.panelY + (frame.isMobile ? 114 : 136);
+
+    createPanel(
+      this,
+      frame.panelX,
+      frame.panelY + 16,
+      frame.panelWidth,
+      Math.min(frame.panelHeight - 32, frame.isMobile ? 540 : 430),
+      {
+        fill: 0x111311,
+        alpha: 0.94,
+        stroke: 0x92a0ff,
+      },
+    );
+
+    this.add
+      .text(frame.centerX, headingY, "FIELD CHOICE", createBodyTextStyle({
+        color: "#9eabff",
+        fontFamily: PHASER_TEXT_FONTS.body,
+        fontSize: `${frame.isMobile ? 18 : 20}px`,
+        letterSpacing: 4,
+        fontStyle: "700",
+      }))
+      .setOrigin(0.5, 0);
+
+    this.add
+      .text(frame.centerX, titleY, "현장 보급", createHeadingTextStyle({
+        color: "#f5efe1",
+        fontFamily: PHASER_TEXT_FONTS.heading,
+        fontSize: `${frame.isMobile ? 34 : 44}px`,
+        fontStyle: "bold",
+      }))
+      .setOrigin(0.5, 0);
+
+    this.add
+      .text(frame.centerX, introY, "다음 웨이브 전에 현장 보급 하나를 선택한다.", createBodyTextStyle({
+        color: "#d9d0bf",
+        fontFamily: PHASER_TEXT_FONTS.body,
+        fontSize: `${frame.isMobile ? 17 : 21}px`,
+        align: "center",
+        wordWrap: { width: frame.panelWidth - 72 },
+        lineSpacing: 8,
+      }))
+      .setOrigin(0.5, 0);
+
+    const columns = frame.isMobile ? 1 : Math.max(1, choices.length);
+    const gap = frame.isMobile ? 8 : 16;
+    const cardWidth = frame.isMobile
+      ? frame.panelWidth - 52
+      : Math.floor((frame.panelWidth - 52 - gap * (columns - 1)) / columns);
+    const cardHeight = frame.isMobile ? 108 : 180;
+    const startX = frame.panelX + 26;
+    const startY = frame.panelY + (frame.isMobile ? 166 : 198);
+
+    choices.forEach((choice, index) => {
+      const column = frame.isMobile ? 0 : index;
+      const row = frame.isMobile ? index : 0;
+      const x = startX + column * (cardWidth + gap);
+      const y = startY + row * (cardHeight + gap);
+      const summaryY = y + (frame.isMobile ? 42 : 48);
+      const descriptionY = y + (frame.isMobile ? 60 : 78);
+      const actionCenterY = y + cardHeight - (frame.isMobile ? 24 : 34);
+      createPanel(this, x, y, cardWidth, cardHeight, {
+        fill: 0x171b2d,
+        alpha: 0.96,
+        stroke: 0x92a0ff,
+      });
+
+      this.add
+        .text(x + 14, y + 14, choice.title, createHeadingTextStyle({
+          color: "#eef1ff",
+          fontFamily: PHASER_TEXT_FONTS.heading,
+          fontSize: `${frame.isMobile ? 24 : 28}px`,
+          strokeThickness: 4,
+        }))
+        .setOrigin(0, 0);
+
+      this.add
+        .text(x + 14, summaryY, choice.summary, createBodyTextStyle({
+          color: "#9eabff",
+          fontFamily: PHASER_TEXT_FONTS.body,
+          fontSize: `${frame.isMobile ? 13 : 16}px`,
+          fontStyle: "700",
+          wordWrap: { width: frame.isMobile ? cardWidth - 124 : cardWidth - 124 },
+        }))
+        .setOrigin(0, 0);
+
+      this.add
+        .text(x + 14, descriptionY, choice.description, createBodyTextStyle({
+          color: "#d8dcf5",
+          fontFamily: PHASER_TEXT_FONTS.body,
+          fontSize: `${frame.isMobile ? 14 : 17}px`,
+          wordWrap: { width: cardWidth - 28 },
+          lineSpacing: frame.isMobile ? 4 : 6,
+        }))
+        .setOrigin(0, 0);
+
+      createButton(
+        this,
+        x + cardWidth - (frame.isMobile ? 50 : 58),
+        actionCenterY,
+        frame.isMobile ? 76 : 92,
+        frame.isMobile ? 30 : 38,
+        "Take",
+        () => {
+          this.applyDraftChoice(choice.id);
+        },
+        {
+          backgroundColor: 0x6b7dff,
+          strokeColor: 0xd9e0ff,
+          textColor: "#fdfcff",
+          fontSize: frame.isMobile ? 15 : 17,
+        },
+      );
+    });
   }
 
   getOverlayCopy(mode, stage) {
@@ -175,6 +300,13 @@ export class OverlayScene extends Phaser.Scene {
   resumePausedBattle() {
     const battle = this.scene.get("BattleScene");
     battle.resumeBattle();
+    this.scene.resume("BattleScene");
+    this.scene.stop();
+  }
+
+  applyDraftChoice(perkId) {
+    const battle = this.scene.get("BattleScene");
+    battle.resolveDraftChoice(perkId);
     this.scene.resume("BattleScene");
     this.scene.stop();
   }

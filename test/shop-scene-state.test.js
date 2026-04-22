@@ -117,3 +117,22 @@ test("resolveShopPurchase advances progress only when the entry is purchasable",
   assert.equal(outcome.nextProgress.currency, 290);
   assert.equal(outcome.nextProgress.upgrades.globalStartGold, 3);
 });
+
+test("combat unlock entries become maxed after a successful purchase", async () => {
+  const { getShopEntryState, resolveShopPurchase } = await loadShopSceneHelpers();
+  const combatUpgrade = META_SHOP_CATALOG.find(({ id }) => id === "blastTuningUnlock");
+  const progress = createMetaProgress();
+  progress.currency = 500;
+  progress.highestClearedStage = 9;
+
+  const before = getShopEntryState(progress, combatUpgrade);
+  const purchase = resolveShopPurchase(progress, combatUpgrade.id);
+  const after = getShopEntryState(purchase.nextProgress, combatUpgrade);
+
+  assert.equal(before.buttonLabel, "Buy");
+  assert.equal(before.isPurchaseEnabled, true);
+  assert.equal(purchase.didPurchase, true);
+  assert.equal(purchase.nextProgress.combatUnlocks.blastTuningUnlock, 1);
+  assert.equal(after.buttonLabel, "Maxed");
+  assert.equal(after.isPurchaseEnabled, false);
+});

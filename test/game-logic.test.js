@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 import { createMetaProgress } from "../src/game/meta-progress.js";
 import {
+  applyBattleDraftChoice,
   buildTowerAtCursor,
   canBuildTower,
   continueCampaign,
@@ -13,9 +14,11 @@ import {
   ENEMY_SPECIES,
   getEnemyPosition,
   getPathLength,
+  getUnlockedBattlePerkIds,
   getTowerStats,
   getWaveDefinition,
   moveCursor,
+  rollBattleDraftChoices,
   resolveDamageAgainstEnemy,
   restartGame,
   selectTowerType,
@@ -103,6 +106,22 @@ test("createInitialState applies permanent starting gold and life bonuses", () =
 
   assert.equal(state.gold, 160);
   assert.equal(state.lives, 17);
+});
+
+test("createInitialState seeds empty run modifiers and draft state for the current run", () => {
+  const state = createInitialState();
+
+  assert.deepEqual(state.runModifiers, {
+    cannonDamageMultiplier: 0,
+    cannonSplashRadiusBonus: 0,
+    magicTargetCountBonus: 0,
+    rapidReloadBonus: 0,
+    slowExtraTicks: 0,
+    slowFactorBonus: 0,
+  });
+  assert.deepEqual(state.draftHistory, []);
+  assert.deepEqual(state.draftChoices, []);
+  assert.equal(state.lastDraftSummary, "");
 });
 
 test("players can place an opening tower before the battle starts", () => {
@@ -213,6 +232,150 @@ test("getTowerStats applies global and tower-specific meta upgrades", () => {
 
   assert.equal(stats.damage, 14.26);
   assert.equal(stats.cooldown, 6);
+});
+
+test("getTowerStats applies temporary run modifiers on top of permanent progression", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.upgrades.globalDamageBoost = 1;
+
+  const cannonStats = getTowerStats(
+    createTower("cannon", 2, 2),
+    metaProgress,
+    {
+      cannonDamageMultiplier: 0.15,
+      cannonSplashRadiusBonus: 0.35,
+      magicTargetCountBonus: 0,
+      rapidReloadBonus: 0,
+      slowExtraTicks: 0,
+      slowFactorBonus: 0,
+    },
+  );
+  const magicStats = getTowerStats(
+    createTower("magic", 2, 2),
+    metaProgress,
+    {
+      cannonDamageMultiplier: 0,
+      cannonSplashRadiusBonus: 0,
+      magicTargetCountBonus: 1,
+      rapidReloadBonus: 0,
+      slowExtraTicks: 0,
+      slowFactorBonus: 0,
+    },
+  );
+  const slowStats = getTowerStats(
+    createTower("slow", 2, 2),
+    metaProgress,
+    {
+      cannonDamageMultiplier: 0,
+      cannonSplashRadiusBonus: 0,
+      magicTargetCountBonus: 0,
+      rapidReloadBonus: 0,
+      slowExtraTicks: 4,
+      slowFactorBonus: 0.08,
+    },
+  );
+  const attackStats = getTowerStats(
+    createTower("attack", 2, 2),
+    metaProgress,
+    {
+      cannonDamageMultiplier: 0,
+      cannonSplashRadiusBonus: 0,
+      magicTargetCountBonus: 0,
+      rapidReloadBonus: 1,
+      slowExtraTicks: 0,
+      slowFactorBonus: 0,
+    },
+  );
+
+  assert.equal(cannonStats.damage, 21.73);
+  assert.equal(cannonStats.splashRadius, 1.3);
+  assert.equal(magicStats.targetCount, 3);
+  assert.equal(slowStats.slowTicks, 14);
+  assert.equal(slowStats.slowFactor, 0.57);
+  assert.equal(attackStats.cooldown, 7);
+});
+
+test("getUnlockedBattlePerkIds includes base perks and purchased combat unlocks", () => {
+  const metaProgress = createMetaProgress();
+  metaProgress.combatUnlocks.blastTuningUnlock = 1;
+  metaProgress.combatUnlocks.deepFreezeUnlock = 1;
+
+  assert.deepEqual(getUnlockedBattlePerkIds(metaProgress), [
+    "supplyDrop",
+    "emergencyRepair",
+    "rapidReload",
+    "blastTuning",
+    "deepFreeze",
+  ]);
+});
+
+test("rollBattleDraftChoices returns three unique perks from the unlocked pool", () => {
+  const state = createInitialState();
+  const rolled = rollBattleDraftChoices(
+    state,
+    ["supplyDrop", "emergencyRepair", "rapidReload", "blastTuning"],
+    () => 0,
+  );
+
+  assert.equal(rolled.length, 3);
+  assert.equal(new Set(rolled.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(rolled.map((choice) => choice.id), [
+    "supplyDrop",
+    "emergencyRepair",
+    "rapidReload",
+  ]);
+});
+
+test("applyBattleDraftChoice applies immediate and run-long perk effects", () => {
+  const initial = createInitialState();
+  initial.status = "draft";
+  initial.wave = 2;
+  initial.gold = 100;
+  initial.lives = 10;
+  initial.draftChoices = [
+    { id: "supplyDrop" },
+    { id: "blastTuning" },
+    { id: "rapidReload" },
+  ];
+
+  const afterSupply = applyBattleDraftChoice(initial, "supplyDrop");
+  const afterBlast = applyBattleDraftChoice({
+    ...initial,
+    draftChoices: [{ id: "blastTuning" }],
+  }, "blastTuning");
+
+  assert.equal(afterSupply.gold, 160);
+  assert.equal(afterSupply.status, "intermission");
+  assert.equal(afterSupply.intermissionTicks, 30);
+  assert.deepEqual(afterSupply.draftHistory, ["supplyDrop"]);
+  assert.equal(afterSupply.lastDraftSummary, "Supply Drop: +60G");
+
+  assert.equal(afterBlast.runModifiers.cannonDamageMultiplier, 0.15);
+  assert.equal(afterBlast.runModifiers.cannonSplashRadiusBonus, 0.35);
+  assert.deepEqual(afterBlast.draftHistory, ["blastTuning"]);
+  assert.equal(afterBlast.status, "intermission");
+  assert.equal(afterBlast.intermissionTicks, 30);
+});
+
+test("draft choice restores an intermission before the next wave starts", () => {
+  let state = startGame(createInitialState());
+  state.wave = 1;
+  state.spawnedInWave = getWaveDefinition(state.stage, state.wave).count;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+  const chosenPerkId = state.draftChoices[0].id;
+  const afterChoice = applyBattleDraftChoice(state, chosenPerkId);
+  const almostRunning = advance(afterChoice, 29);
+  const resumed = tickGame(almostRunning);
+
+  assert.equal(afterChoice.status, "intermission");
+  assert.equal(afterChoice.intermissionTicks, 30);
+  assert.equal(almostRunning.status, "intermission");
+  assert.equal(almostRunning.intermissionTicks, 1);
+  assert.equal(resumed.status, "running");
+  assert.equal(resumed.wave, 2);
 });
 
 test("cannon splash damages clustered enemies", () => {
@@ -352,6 +515,8 @@ test("restartGame preserves permanent meta bonuses when rebuilding battle state"
   assert.equal(restarted.gold, 170);
   assert.equal(restarted.lives, 16);
   assert.deepEqual(restarted.metaProgress, createInitialState(4, metaProgress).metaProgress);
+  assert.deepEqual(restarted.runModifiers, createInitialState(4, metaProgress).runModifiers);
+  assert.deepEqual(restarted.draftHistory, []);
 });
 
 test("restartGame can target an explicit stage before battle starts", () => {
@@ -442,6 +607,33 @@ test("clearing the boss wave moves the campaign to the next stage gate", () => {
   assert.equal(state.stage, 2);
   assert.equal(state.wave, 1);
   assert.equal(state.spawnedInWave, 0);
+});
+
+test("clearing a normal wave pauses for a three-choice field draft before the next wave", () => {
+  let state = startGame(createInitialState());
+  state.wave = 1;
+  state.spawnedInWave = getWaveDefinition(state.stage, state.wave).count;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  assert.equal(state.status, "draft");
+  assert.equal(state.wave, 2);
+  assert.equal(state.draftChoices.length, 3);
+  assert.equal(new Set(state.draftChoices.map((choice) => choice.id)).size, 3);
+});
+
+test("boss wave clear does not open a field draft", () => {
+  let state = startGame(createInitialState());
+  state.wave = 5;
+  state.spawnedInWave = 1;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  assert.notEqual(state.status, "draft");
 });
 
 test("advancing to the next stage clears all towers before the next briefing", () => {

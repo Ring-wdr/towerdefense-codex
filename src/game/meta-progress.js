@@ -1,3 +1,5 @@
+import { DEFAULT_COMBAT_UNLOCKS } from "./battle-perks.js";
+
 export const META_PROGRESS_STORAGE_KEY = "tower-defense.meta-progress";
 
 export const DEFAULT_META_UPGRADES = {
@@ -16,6 +18,7 @@ export function createMetaProgress() {
   return {
     currency: 0,
     highestClearedStage: 0,
+    combatUnlocks: { ...DEFAULT_COMBAT_UNLOCKS },
     upgrades: { ...DEFAULT_META_UPGRADES },
   };
 }
@@ -26,9 +29,18 @@ function normalizeNonNegativeNumber(value) {
 
 export function normalizeMetaProgress(value = {}) {
   const source = value && typeof value === "object" ? value : {};
+  const combatUnlockSource =
+    source.combatUnlocks && typeof source.combatUnlocks === "object"
+      ? source.combatUnlocks
+      : {};
   const upgradesSource =
     source.upgrades && typeof source.upgrades === "object" ? source.upgrades : {};
+  const combatUnlocks = {};
   const upgrades = {};
+
+  for (const key of Object.keys(DEFAULT_COMBAT_UNLOCKS)) {
+    combatUnlocks[key] = normalizeNonNegativeNumber(combatUnlockSource[key]);
+  }
 
   for (const key of Object.keys(DEFAULT_META_UPGRADES)) {
     upgrades[key] = normalizeNonNegativeNumber(upgradesSource[key]);
@@ -39,6 +51,7 @@ export function normalizeMetaProgress(value = {}) {
     highestClearedStage: Number.isFinite(source.highestClearedStage)
       ? source.highestClearedStage
       : 0,
+    combatUnlocks,
     upgrades,
   };
 }
