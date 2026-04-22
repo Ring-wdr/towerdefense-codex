@@ -9,6 +9,7 @@ import {
   continueCampaign,
   createInitialState,
   deleteTowerAtCursor,
+  ENEMY_DEFEAT_TICKS,
   ENEMY_SPECIES,
   getEnemyPosition,
   getPathLength,
@@ -228,6 +229,24 @@ test("cannon splash damages clustered enemies", () => {
   assert.ok(state.enemies[0].health < 80);
   assert.ok(state.enemies[1].health < 80);
   assert.ok(state.attackEffects.some((effect) => effect.type === "cannon"));
+});
+
+test("defeated enemies linger briefly for death poses before removal", () => {
+  let state = startGame(createInitialState());
+  state.towers = [createTower("attack", 2, 2)];
+  state.enemies = [createEnemy({ id: 1, species: "boss", kind: "boss", progress: 1.2, health: 1 })];
+  state.nextSpawnTick = 999;
+
+  state = tickGame(state);
+
+  assert.equal(state.enemies.length, 1);
+  assert.equal(state.enemies[0].defeated, true);
+  assert.equal(state.enemies[0].defeatedTicks, ENEMY_DEFEAT_TICKS);
+  assert.equal(state.enemies[0].health, 0);
+
+  state = advance(state, ENEMY_DEFEAT_TICKS);
+
+  assert.equal(state.enemies.length, 0);
 });
 
 test("attack effects carry stable ids and the metadata battle particles need", () => {

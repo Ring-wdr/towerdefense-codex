@@ -1,4 +1,7 @@
 import * as Phaser from "phaser";
+import draculaBossSpriteUrl from "../../assets/boss/transparent/dracula-boss-transparent.png";
+import flameBossSpriteUrl from "../../assets/boss/transparent/flame-boss-transparent.png";
+import frostBossSpriteUrl from "../../assets/boss/transparent/frost-boss-transparent.png";
 import attackTowerSpriteUrl from "../../assets/towers/attack-v2.png";
 import bossEnemySpriteUrl from "../../assets/enemies/boss-v2.png";
 import cannonTowerSpriteUrl from "../../assets/towers/cannon-v2.png";
@@ -20,6 +23,7 @@ import {
   CELL_SIZE,
   createInitialState,
   deleteTowerAtCursor,
+  ENEMY_DEFEAT_TICKS,
   ENEMY_SPECIES,
   findTowerAt,
   getEnemyPosition,
@@ -39,6 +43,7 @@ import {
   TOWER_TYPES,
   upgradeTowerAtCursor,
 } from "../../game/logic.js";
+import { getStageDefinition } from "../../game/stages.js";
 import {
   beginBattleFromSelection,
   completeBattleStage,
@@ -90,6 +95,44 @@ const ENEMY_TEXTURE_URLS = {
   "enemy-shellback": shellbackEnemySpriteUrl,
   "enemy-swarmling": swarmlingEnemySpriteUrl,
   "enemy-wisp": wispEnemySpriteUrl,
+};
+const THEME_BOSS_TEXTURE_KEYS = {
+  "기초 방어": "enemy-boss-frost",
+  "압박 대응": "enemy-boss-flame",
+  "후반 운용": "enemy-boss-dracula",
+};
+const THEME_BOSS_TEXTURE_URLS = {
+  "enemy-boss-frost": frostBossSpriteUrl,
+  "enemy-boss-flame": flameBossSpriteUrl,
+  "enemy-boss-dracula": draculaBossSpriteUrl,
+};
+const THEME_BOSS_FRAME_RECTS = {
+  "기초 방어": {
+    idle: { x: 8, y: 614, width: 214, height: 210 },
+    death: { x: 884, y: 1098, width: 360, height: 150 },
+  },
+  "압박 대응": {
+    idle: { x: 0, y: 601, width: 210, height: 216 },
+    death: { x: 936, y: 1052, width: 318, height: 190 },
+  },
+  "후반 운용": {
+    idle: { x: 0, y: 641, width: 160, height: 194 },
+    death: { x: 36, y: 847, width: 162, height: 180 },
+  },
+};
+const THEME_BOSS_FRAME_KEYS = {
+  "기초 방어": {
+    idle: "enemy-boss-frost-idle",
+    death: "enemy-boss-frost-death",
+  },
+  "압박 대응": {
+    idle: "enemy-boss-flame-idle",
+    death: "enemy-boss-flame-death",
+  },
+  "후반 운용": {
+    idle: "enemy-boss-dracula-idle",
+    death: "enemy-boss-dracula-death",
+  },
 };
 const GRASS_TILE_TEXTURE_KEYS = ["tile-grass-1", "tile-grass-2"];
 const ROAD_TILE_TEXTURE_KEYS = ["tile-road-1", "tile-road-2"];
@@ -167,6 +210,12 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
+    for (const [key, url] of Object.entries(THEME_BOSS_TEXTURE_URLS)) {
+      if (!this.textures.exists(key)) {
+        this.load.image(key, url);
+      }
+    }
+
     for (const [key, url] of Object.entries(TILE_TEXTURE_URLS)) {
       if (!this.textures.exists(key)) {
         this.load.image(key, url);
@@ -183,6 +232,7 @@ export class BattleScene extends Phaser.Scene {
     this.state = createInitialState(stage, metaProgress);
     this.lastTickAt = 0;
     this.game.registry.set("session", nextSession);
+    this.registerBossFrames();
 
     this.cameras.main.setBackgroundColor("#142018");
     this.towerBadgeGraphics = this.add.graphics();
@@ -912,14 +962,16 @@ export class BattleScene extends Phaser.Scene {
     }
 
     for (const enemy of this.state.enemies) {
-      const textureKey = ENEMY_TEXTURE_KEYS[enemy.kind === "boss" ? "boss" : enemy.species];
+      const textureKey = enemy.kind === "boss"
+        ? this.getBossTextureKey()
+        : ENEMY_TEXTURE_KEYS[enemy.species];
       if (!textureKey) {
         continue;
       }
 
       let sprite = this.enemySprites.get(enemy.id);
       if (!sprite) {
-        sprite = this.add.image(0, 0, textureKey);
+        sprite = this.add.image(0, 0, textureKey, enemy.kind === "boss" ? this.getBossFrameKey(enemy) : undefined);
         sprite.setDepth(DEPTHS.enemies);
         this.enemySprites.set(enemy.id, sprite);
       }
@@ -929,7 +981,20 @@ export class BattleScene extends Phaser.Scene {
       const y = this.boardOffset.y + this.scaleLength(point.y);
       const size = this.getEnemySpriteDisplaySize(enemy);
       sprite.setPosition(x, y);
-      sprite.setDisplaySize(size, size);
+      sprite.setAlpha(this.getEnemySpriteAlpha(enemy));
+
+      if (enemy.kind === "boss") {
+        const frameKey = this.getBossFrameKey(enemy);
+        const frameRect = this.getBossFrameRect(enemy);
+        sprite.setTexture(textureKey, frameKey);
+        const scale = size / Math.max(frameRect.width, frameRect.height);
+        sprite.setDisplaySize(
+          Math.round(frameRect.width * scale),
+          Math.round(frameRect.height * scale),
+        );
+      } else {
+        sprite.setDisplaySize(size, size);
+      }
     }
   }
 
@@ -942,6 +1007,10 @@ export class BattleScene extends Phaser.Scene {
       const spriteSize = this.getEnemySpriteDisplaySize(enemy);
       const halfWidth = Math.round(spriteSize * 0.52);
       const top = y - halfWidth - this.scaleLength(8);
+
+      if (enemy.defeated) {
+        continue;
+      }
 
       if (enemy.slowTicks > 0) {
         this.graphics.lineStyle(2, 0x67c498, 0.55);
@@ -1052,7 +1121,7 @@ export class BattleScene extends Phaser.Scene {
 
   getEnemyBaseSpriteSize(enemy) {
     if (enemy.kind === "boss") {
-      return 72;
+      return 220;
     }
 
     const species = ENEMY_SPECIES[enemy.species];
@@ -1061,6 +1130,50 @@ export class BattleScene extends Phaser.Scene {
 
   getEnemySpriteDisplaySize(enemy) {
     return this.scaleLength(this.getEnemyBaseSpriteSize(enemy));
+  }
+
+  getEnemySpriteAlpha(enemy) {
+    if (!enemy.defeated) {
+      return 1;
+    }
+
+    return Phaser.Math.Clamp((enemy.defeatedTicks ?? 0) / ENEMY_DEFEAT_TICKS, 0, 1);
+  }
+
+  getBossTextureKey() {
+    const stageTheme = getStageDefinition(this.state.stage)?.theme;
+    return THEME_BOSS_TEXTURE_KEYS[stageTheme] ?? ENEMY_TEXTURE_KEYS.boss;
+  }
+
+  registerBossFrames() {
+    for (const [theme, textureKey] of Object.entries(THEME_BOSS_TEXTURE_KEYS)) {
+      const texture = this.textures.get(textureKey);
+      const frameKeys = THEME_BOSS_FRAME_KEYS[theme];
+      const frameRects = THEME_BOSS_FRAME_RECTS[theme];
+
+      if (!texture || !frameKeys || !frameRects) {
+        continue;
+      }
+
+      for (const state of ["idle", "death"]) {
+        if (!texture.has(frameKeys[state])) {
+          const rect = frameRects[state];
+          texture.add(frameKeys[state], 0, rect.x, rect.y, rect.width, rect.height);
+        }
+      }
+    }
+  }
+
+  getBossFrameKey(enemy) {
+    const stageTheme = getStageDefinition(enemy.stage ?? this.state.stage)?.theme;
+    const themeFrames = THEME_BOSS_FRAME_KEYS[stageTheme];
+    return enemy.defeated ? themeFrames?.death ?? null : themeFrames?.idle ?? null;
+  }
+
+  getBossFrameRect(enemy) {
+    const stageTheme = getStageDefinition(enemy.stage ?? this.state.stage)?.theme;
+    const themeFrames = THEME_BOSS_FRAME_RECTS[stageTheme];
+    return enemy.defeated ? themeFrames?.death ?? { x: 0, y: 0, width: 1, height: 1 } : themeFrames?.idle ?? { x: 0, y: 0, width: 1, height: 1 };
   }
 
   scaleLength(length) {

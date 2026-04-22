@@ -347,6 +347,28 @@ test("battle scene lets s start the next wave from keyboard during ready states"
   assert.match(handleKeyDownBody, /this\.applyState\(startGame\(this\.state\)\);/);
 });
 
+test("battle scene routes boss sprites by stage theme", () => {
+  assert.match(battleSceneSource, /import draculaBossSpriteUrl from "\.\.\/\.\.\/assets\/boss\/transparent\/dracula-boss-transparent\.png";/);
+  assert.match(battleSceneSource, /import flameBossSpriteUrl from "\.\.\/\.\.\/assets\/boss\/transparent\/flame-boss-transparent\.png";/);
+  assert.match(battleSceneSource, /import frostBossSpriteUrl from "\.\.\/\.\.\/assets\/boss\/transparent\/frost-boss-transparent\.png";/);
+  assert.match(battleSceneSource, /const THEME_BOSS_TEXTURE_KEYS = \{[\s\S]*"기초 방어": "enemy-boss-frost",[\s\S]*"압박 대응": "enemy-boss-flame",[\s\S]*"후반 운용": "enemy-boss-dracula",[\s\S]*\};/);
+  assert.match(battleSceneSource, /const THEME_BOSS_TEXTURE_URLS = \{[\s\S]*"enemy-boss-frost": frostBossSpriteUrl,[\s\S]*"enemy-boss-flame": flameBossSpriteUrl,[\s\S]*"enemy-boss-dracula": draculaBossSpriteUrl,[\s\S]*\};/);
+  assert.match(battleSceneSource, /const THEME_BOSS_FRAME_RECTS = \{[\s\S]*idle:[\s\S]*death:[\s\S]*\};/);
+  assert.match(battleSceneSource, /const THEME_BOSS_FRAME_KEYS = \{[\s\S]*idle:[\s\S]*death:[\s\S]*\};/);
+  assert.match(battleSceneSource, /for \(const \[key, url\] of Object\.entries\(THEME_BOSS_TEXTURE_URLS\)\)/);
+  assert.match(battleSceneSource, /this\.registerBossFrames\(\);/);
+  assert.match(battleSceneSource, /registerBossFrames\(\)\s*\{[\s\S]*texture\.add\(frameKeys\[state\], 0, rect\.x, rect\.y, rect\.width, rect\.height\);[\s\S]*\}/);
+  assert.match(battleSceneSource, /const textureKey = enemy\.kind === "boss"\s*\?\s*this\.getBossTextureKey\(\)\s*:\s*ENEMY_TEXTURE_KEYS\[enemy\.species\];/);
+  assert.match(battleSceneSource, /sprite = this\.add\.image\(0, 0, textureKey, enemy\.kind === "boss" \? this\.getBossFrameKey\(enemy\) : undefined\);/);
+  assert.match(battleSceneSource, /sprite\.setAlpha\(this\.getEnemySpriteAlpha\(enemy\)\);/);
+  assert.match(battleSceneSource, /sprite\.setTexture\(textureKey,\s*frameKey\);/);
+  assert.match(battleSceneSource, /const scale = size \/ Math\.max\(frameRect\.width,\s*frameRect\.height\);/);
+  assert.match(battleSceneSource, /getEnemySpriteAlpha\(enemy\)\s*\{[\s\S]*if \(!enemy\.defeated\) \{[\s\S]*return 1;[\s\S]*return Phaser\.Math\.Clamp\(\(enemy\.defeatedTicks \?\? 0\) \/ ENEMY_DEFEAT_TICKS,\s*0,\s*1\);[\s\S]*\}/);
+  assert.match(battleSceneSource, /getBossTextureKey\(\)\s*\{[\s\S]*const stageTheme = getStageDefinition\(this\.state\.stage\)\?\.theme;[\s\S]*return THEME_BOSS_TEXTURE_KEYS\[stageTheme\] \?\? ENEMY_TEXTURE_KEYS\.boss;[\s\S]*\}/);
+  assert.match(battleSceneSource, /getBossFrameKey\(enemy\)\s*\{[\s\S]*return enemy\.defeated \? themeFrames\?\.death \?\? null : themeFrames\?\.idle \?\? null;/);
+  assert.match(battleSceneSource, /getBossFrameRect\(enemy\)\s*\{[\s\S]*return enemy\.defeated \? themeFrames\?\.death[\s\S]*: themeFrames\?\.idle/);
+});
+
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
   assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
   assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);

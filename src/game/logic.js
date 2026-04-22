@@ -16,6 +16,7 @@ export const CELL_SIZE = 60;
 export const TICK_MS = 100;
 export const MAX_TOWER_LEVEL = 3;
 export const INTERMISSION_TICKS = 300;
+export const ENEMY_DEFEAT_TICKS = 10;
 
 export const TOWER_TYPES = {
   attack: {
@@ -504,6 +505,8 @@ function createBossEnemy(state, wave) {
   return {
     arcaneResist: 0.1,
     damageToBase: 3,
+    defeated: false,
+    defeatedTicks: 0,
     id: state.nextEnemyId++,
     kind: "boss",
     species: "boss",
@@ -526,6 +529,8 @@ function createEnemyFromSpecies(state, wave, species) {
   return {
     arcaneResist: definition.arcaneResist,
     damageToBase: definition.damageToBase,
+    defeated: false,
+    defeatedTicks: 0,
     id: state.nextEnemyId++,
     kind: "normal",
     species,
@@ -543,6 +548,10 @@ function createEnemyFromSpecies(state, wave, species) {
 
 function moveEnemies(state) {
   for (const enemy of state.enemies) {
+    if (enemy.defeated) {
+      continue;
+    }
+
     const pathLength = getStagePathLength(enemy.stage ?? state.stage);
     const currentSlowFactor = enemy.slowTicks > 0 ? enemy.slowFactor : 1;
     enemy.progress += enemy.speed * currentSlowFactor;
@@ -580,6 +589,7 @@ function runTowers(state) {
 function selectTargetsForTower(enemies, tower, stats) {
   const candidates = enemies
     .filter((enemy) => !enemy.escaped)
+    .filter((enemy) => !enemy.defeated)
     .filter((enemy) => distanceBetweenTowerAndEnemy(tower, enemy) <= stats.range);
 
   if (!candidates.length) {
@@ -617,6 +627,10 @@ function applyTowerAttack(enemies, tower, stats, targets) {
 }
 
 function applyHit(enemy, stats, scale) {
+  if (enemy.defeated || enemy.escaped) {
+    return;
+  }
+
   enemy.health -= resolveDamageAgainstEnemy(enemy, stats, scale);
   if (stats.slowTicks > 0) {
     enemy.slowFactor = Math.min(enemy.slowFactor, stats.slowFactor);
@@ -698,11 +712,28 @@ function settleEnemies(state) {
       state.lives -= enemy.damageToBase ?? 1;
       continue;
     }
+
+    if (enemy.defeated) {
+      enemy.defeatedTicks = Math.max(0, (enemy.defeatedTicks ?? 0) - 1);
+      if (enemy.defeatedTicks > 0) {
+        survivors.push(enemy);
+      }
+      continue;
+    }
+
     if (enemy.health <= 0) {
       state.gold += enemy.reward;
       state.score += enemy.reward * 10;
+      enemy.defeated = true;
+      enemy.defeatedTicks = ENEMY_DEFEAT_TICKS;
+      enemy.health = 0;
+      enemy.slowFactor = 1;
+      enemy.slowTicks = 0;
+      enemy.speed = 0;
+      survivors.push(enemy);
       continue;
     }
+
     survivors.push(enemy);
   }
   state.enemies = survivors;
