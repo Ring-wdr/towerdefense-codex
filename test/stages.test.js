@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import { TOWER_TYPES } from "../src/game/logic.js";
 import {
+  ENDLESS_STAGE_NUMBER,
   WAVES_PER_STAGE,
+  getEndlessStageDefinition,
   getStageCount,
   getStageDefinition,
   getStageWaveDefinition,
@@ -55,4 +57,28 @@ test("road lookup is stage-specific", () => {
   assert.equal(isStageRoadCell(2, 0, 4), true);
   assert.equal(isStageRoadCell(2, 1, 1), false);
   assert.equal(isStageRoadCell(5, 6, 4), true);
+});
+
+test("endless mode has a dedicated map outside campaign progression", () => {
+  const endless = getEndlessStageDefinition();
+
+  assert.equal(getStageCount(), 9);
+  assert.equal(endless.number, ENDLESS_STAGE_NUMBER);
+  assert.equal(getStageDefinition(ENDLESS_STAGE_NUMBER).id, endless.id);
+  assert.equal(isStageRoadCell(ENDLESS_STAGE_NUMBER, 0, 4), true);
+  assert.equal(isStageRoadCell(ENDLESS_STAGE_NUMBER, 6, 2), true);
+  assert.equal(isStageRoadCell(ENDLESS_STAGE_NUMBER, 6, 7), false);
+});
+
+test("endless waves scale indefinitely on the endless map", () => {
+  const early = getStageWaveDefinition(ENDLESS_STAGE_NUMBER, 1);
+  const boss = getStageWaveDefinition(ENDLESS_STAGE_NUMBER, 5);
+  const later = getStageWaveDefinition(ENDLESS_STAGE_NUMBER, 11);
+
+  assert.equal(boss.boss, true);
+  assert.deepEqual(boss.spawnPlan, ["boss"]);
+  assert.ok(early.spawnPlan.includes("runner"));
+  assert.ok(later.count > early.count);
+  assert.ok(later.health > early.health);
+  assert.ok(later.speciesPool.includes("wisp"));
 });

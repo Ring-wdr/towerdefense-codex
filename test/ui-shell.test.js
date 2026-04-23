@@ -273,6 +273,17 @@ test("title and campaign scenes expose the shop and title back buttons in source
   assert.match(campaignSceneSource, /this\.scene\.start\("TitleScene"\)/);
 });
 
+test("title scene exposes endless mode only through campaign-clear meta progress", () => {
+  assert.match(titleSceneSource, /beginEndlessBattle/);
+  assert.match(titleSceneSource, /getStageCount/);
+  assert.match(titleSceneSource, /loadMetaProgress/);
+  assert.match(titleSceneSource, /highestClearedStage\s*>=\s*getStageCount\(\)/);
+  assert.match(titleSceneSource, /"Endless Mode"/);
+  assert.match(titleSceneSource, /const commandStackTop = Math\.min\(layout\.command\.top,\s*layout\.command\.bottom - commandStackHeight\);/);
+  assert.match(titleSceneSource, /beginEndlessBattle\(getSession\(this\),\s*metaProgress\)/);
+  assert.match(titleSceneSource, /this\.scene\.start\("BattleScene"/);
+});
+
 test("main entry guards against iOS double-tap zoom in the app shell", () => {
   assert.match(mainSource, /addEventListener\("touchend"/);
   assert.match(mainSource, /passive:\s*false/);
@@ -286,7 +297,7 @@ test("battle scene opens on a ready state and exposes a start button for entry a
   assert.ok(createBody);
   assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
   assert.match(createBody, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
-  assert.match(createBody, /this\.state\s*=\s*createInitialState\(stage,\s*metaProgress\);/);
+  assert.match(createBody, /this\.state\s*=\s*createInitialState\(stage,\s*metaProgress,\s*\{\s*mode\s*\}\);/);
   assert.doesNotMatch(battleSceneSource, /this\.state\s*=\s*startGame\(createInitialState\(stage\)\);/);
   assert.match(battleSceneSource, /this\.controls\.startButton\.textContent/);
 });
@@ -296,7 +307,7 @@ test("battle scene boot reads permanent progression from the registry before bui
 
   assert.ok(createBody);
   assert.match(createBody, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
-  assert.match(createBody, /this\.state = createInitialState\(stage,\s*metaProgress\);/);
+  assert.match(createBody, /this\.state = createInitialState\(stage,\s*metaProgress,\s*\{\s*mode\s*\}\);/);
 });
 
 test("battle scene restart preserves permanent progression when rebuilding state", () => {

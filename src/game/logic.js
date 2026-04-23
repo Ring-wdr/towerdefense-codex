@@ -1,5 +1,6 @@
 import {
   WAVES_PER_STAGE,
+  ENDLESS_STAGE_NUMBER,
   getStageCount,
   getStagePathCells,
   getStagePathLength,
@@ -128,9 +129,14 @@ export const ENEMY_SPECIES = {
 
 export { getUnlockedBattlePerkIds } from "./battle-perks.js";
 
-export function createInitialState(stage = 1, metaProgress = createMetaProgress()) {
+function getBattleMode(stage, options = {}) {
+  return options.mode === "endless" || stage === ENDLESS_STAGE_NUMBER ? "endless" : "campaign";
+}
+
+export function createInitialState(stage = 1, metaProgress = createMetaProgress(), options = {}) {
   const normalizedMetaProgress = normalizeMetaProgress(metaProgress);
   const metaModifiers = getMetaBattleModifiers(normalizedMetaProgress);
+  const mode = getBattleMode(stage, options);
 
   return {
     attackEffects: [],
@@ -139,6 +145,7 @@ export function createInitialState(stage = 1, metaProgress = createMetaProgress(
     gold: 140 + metaModifiers.startGold,
     lives: 15 + metaModifiers.maxLives,
     metaProgress: normalizedMetaProgress,
+    mode,
     nextAttackEffectId: 1,
     nextEnemyId: 1,
     nextTowerId: 1,
@@ -224,8 +231,8 @@ export function togglePause(state) {
   return next;
 }
 
-export function restartGame(stage = 1, metaProgress = createMetaProgress()) {
-  return createInitialState(stage, metaProgress);
+export function restartGame(stage = 1, metaProgress = createMetaProgress(), options = {}) {
+  return createInitialState(stage, metaProgress, options);
 }
 
 export function selectTowerType(state, towerType) {
@@ -815,6 +822,15 @@ function maybeAdvanceWave(state) {
 
   state.score += 50;
   state.gold += 20;
+
+  if (state.mode === "endless") {
+    state.wave += 1;
+    state.spawnedInWave = 0;
+    state.nextSpawnTick = state.tick + 18;
+    state.status = "draft";
+    state.draftChoices = rollBattleDraftChoices(state);
+    return;
+  }
 
   if (state.wave < WAVES_PER_STAGE) {
     state.wave += 1;

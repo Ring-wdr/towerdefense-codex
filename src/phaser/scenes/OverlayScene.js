@@ -1,10 +1,12 @@
 import * as Phaser from "phaser";
 import {
+  beginEndlessBattle,
   createGameSession,
   returnToCampaign,
   retryBattle,
   selectStage,
 } from "../state/game-session.js";
+import { loadMetaProgress } from "../../game/meta-progress.js";
 import {
   createBodyTextStyle,
   createButton,
@@ -27,6 +29,7 @@ export class OverlayScene extends Phaser.Scene {
     const frame = getViewportFrame(this);
     const mode = data.mode ?? "paused";
     const stage = data.stage ?? getSession(this).selectedStage ?? 1;
+    const battleMode = data.battleMode ?? getSession(this).battleMode ?? "campaign";
     const escHandler = () => {
       this.resumePausedBattle();
     };
@@ -42,7 +45,7 @@ export class OverlayScene extends Phaser.Scene {
       alpha: 0.92,
     });
 
-    const copy = this.getOverlayCopy(mode, stage);
+    const copy = this.getOverlayCopy(mode, stage, battleMode);
     this.add
       .text(frame.centerX, frame.panelY + 72, copy.title, createHeadingTextStyle({
         color: "#f5efe1",
@@ -213,19 +216,25 @@ export class OverlayScene extends Phaser.Scene {
     });
   }
 
-  getOverlayCopy(mode, stage) {
+  getOverlayCopy(mode, stage, battleMode = "campaign") {
+    const isEndless = battleMode === "endless";
+
     if (mode === "game-over") {
       return {
         title: "Game Over",
-        body: `Stage ${stage} 방어선이 무너졌다. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다.`,
+        body: isEndless
+          ? "무한 전장 방어선이 무너졌다. 같은 도전을 다시 시도하거나 타이틀로 복귀한다."
+          : `Stage ${stage} 방어선이 무너졌다. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다.`,
         actions: [
           {
             label: "Retry",
             run: () => {
-              const session = retryBattle(selectStage(getSession(this), stage));
+              const session = isEndless
+                ? beginEndlessBattle(getSession(this), this.game.registry.get("metaProgress") ?? loadMetaProgress())
+                : retryBattle(selectStage(getSession(this), stage));
               this.game.registry.set("session", session);
               this.scene.stop("BattleScene");
-              this.scene.start("BattleScene", { stage });
+              this.scene.start("BattleScene", isEndless ? { mode: "endless" } : { stage });
             },
           },
           {
@@ -234,7 +243,7 @@ export class OverlayScene extends Phaser.Scene {
               const battle = this.scene.get("BattleScene");
               battle.returnToTheme();
               this.scene.stop("BattleScene");
-              this.scene.start("ThemeScene");
+              this.scene.start(isEndless ? "TitleScene" : "ThemeScene");
             },
           },
         ],
@@ -267,7 +276,9 @@ export class OverlayScene extends Phaser.Scene {
 
     return {
       title: "Paused",
-      body: `Stage ${stage} 교전이 중지됐다. 전투를 재개하거나 재정비 후 복귀할 수 있다.`,
+      body: isEndless
+        ? "무한 전장 교전이 중지됐다. 전투를 재개하거나 타이틀로 복귀할 수 있다."
+        : `Stage ${stage} 교전이 중지됐다. 전투를 재개하거나 재정비 후 복귀할 수 있다.`,
       actions: [
         {
           label: "Resume",
@@ -278,10 +289,12 @@ export class OverlayScene extends Phaser.Scene {
         {
           label: "Retry",
           run: () => {
-            const session = retryBattle(selectStage(getSession(this), stage));
+            const session = isEndless
+              ? beginEndlessBattle(getSession(this), this.game.registry.get("metaProgress") ?? loadMetaProgress())
+              : retryBattle(selectStage(getSession(this), stage));
             this.game.registry.set("session", session);
             this.scene.stop("BattleScene");
-            this.scene.start("BattleScene", { stage });
+            this.scene.start("BattleScene", isEndless ? { mode: "endless" } : { stage });
           },
         },
         {
@@ -290,7 +303,7 @@ export class OverlayScene extends Phaser.Scene {
             const battle = this.scene.get("BattleScene");
             battle.returnToTheme();
             this.scene.stop("BattleScene");
-            this.scene.start("ThemeScene");
+            this.scene.start(isEndless ? "TitleScene" : "ThemeScene");
           },
         },
       ],

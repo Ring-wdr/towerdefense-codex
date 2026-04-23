@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   beginBattleFromSelection,
+  beginEndlessBattle,
   completeBattleStage,
   createGameSession,
   cycleThemeSelection,
@@ -14,6 +15,8 @@ import {
   retryBattle,
   selectStage,
 } from "../src/phaser/state/game-session.js";
+import { createMetaProgress } from "../src/game/meta-progress.js";
+import { getStageCount, ENDLESS_STAGE_NUMBER } from "../src/game/stages.js";
 
 test("game session starts on the title scene with a selected first theme and stage", () => {
   const session = createGameSession();
@@ -105,6 +108,35 @@ test("openShop switches the session to the shop scene without changing stage sel
   assert.equal(session.screen, "shop");
   assert.equal(session.selectedTheme, selected.selectedTheme);
   assert.equal(session.selectedStage, selected.selectedStage);
+  assert.equal(session.activeStage, null);
+});
+
+test("beginEndlessBattle only opens after the campaign is cleared", () => {
+  const locked = beginEndlessBattle(createGameSession(), createMetaProgress());
+  const progress = {
+    ...createMetaProgress(),
+    highestClearedStage: getStageCount(),
+  };
+  const unlocked = beginEndlessBattle(createGameSession(), progress);
+
+  assert.equal(locked.scene, "title");
+  assert.equal(locked.activeStage, null);
+  assert.equal(unlocked.scene, "battle");
+  assert.equal(unlocked.screen, "battle");
+  assert.equal(unlocked.battleMode, "endless");
+  assert.equal(unlocked.selectedStage, ENDLESS_STAGE_NUMBER);
+  assert.equal(unlocked.activeStage, ENDLESS_STAGE_NUMBER);
+});
+
+test("returnToTitle clears endless battle mode", () => {
+  const progress = {
+    ...createMetaProgress(),
+    highestClearedStage: getStageCount(),
+  };
+  const session = returnToTitle(beginEndlessBattle(createGameSession(), progress));
+
+  assert.equal(session.scene, "title");
+  assert.equal(session.battleMode, "campaign");
   assert.equal(session.activeStage, null);
 });
 

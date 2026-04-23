@@ -45,13 +45,15 @@ import {
   TOWER_TYPES,
   upgradeTowerAtCursor,
 } from "../../game/logic.js";
-import { getStageDefinition } from "../../game/stages.js";
+import { ENDLESS_STAGE_NUMBER, getStageDefinition } from "../../game/stages.js";
 import {
   beginBattleFromSelection,
+  beginEndlessBattle,
   completeBattleStage,
   createGameSession,
   getCompletedBattleStage,
   returnFromBattleToTheme,
+  returnToTitle,
   selectStage,
 } from "../state/game-session.js";
 import { loadMetaProgress, saveMetaProgress } from "../../game/meta-progress.js";
@@ -226,12 +228,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(data = {}) {
-    const sessionStage = getSession(this).activeStage;
-    const stage = data.stage ?? sessionStage ?? 1;
-    const nextSession = beginBattleFromSelection(selectStage(getSession(this), stage));
+    const session = getSession(this);
     const metaProgress = this.game.registry.get("metaProgress");
+    const mode = data.mode ?? session.battleMode ?? "campaign";
+    const sessionStage = session.activeStage;
+    const stage = mode === "endless" ? ENDLESS_STAGE_NUMBER : data.stage ?? sessionStage ?? 1;
+    const nextSession =
+      mode === "endless"
+        ? beginEndlessBattle(session, metaProgress)
+        : beginBattleFromSelection(selectStage(session, stage));
 
-    this.state = createInitialState(stage, metaProgress);
+    this.state = createInitialState(stage, metaProgress, { mode });
     this.lastTickAt = 0;
     this.game.registry.set("session", nextSession);
     this.registerBossFrames();
@@ -523,6 +530,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   returnToTheme() {
+    if (this.state.mode === "endless") {
+      this.game.registry.set("session", returnToTitle(getSession(this)));
+      this.setBattleControlsVisible(false);
+      return;
+    }
+
     const nextSession = returnFromBattleToTheme(selectStage(getSession(this), this.state.stage));
 
     this.game.registry.set("session", nextSession);
@@ -727,6 +740,7 @@ export class BattleScene extends Phaser.Scene {
     this.scene.launch("OverlayScene", {
       mode,
       stage: this.state.stage,
+      battleMode: this.state.mode,
       ...data,
     });
     this.scene.pause();
@@ -1234,7 +1248,7 @@ export class BattleScene extends Phaser.Scene {
         : "Cannot deploy here";
 
     const hudLines = [
-      `Stage ${this.state.stage}  Wave ${this.state.wave}  ♥ ${this.state.lives}  💰 ${this.state.gold}`,
+      `${this.state.mode === "endless" ? "Endless" : `Stage ${this.state.stage}`}  Wave ${this.state.wave}  ♥ ${this.state.lives}  💰 ${this.state.gold}`,
       `Tower ${selectedTower.name}  Cursor ${this.state.cursor.x},${this.state.cursor.y}  ${actionHint}`,
     ];
     if (this.state.lastDraftSummary) {

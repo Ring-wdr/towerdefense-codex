@@ -1,5 +1,12 @@
 import * as Phaser from "phaser";
-import { cycleThemeSelection, createGameSession, openShop } from "../state/game-session.js";
+import { getStageCount } from "../../game/stages.js";
+import { loadMetaProgress } from "../../game/meta-progress.js";
+import {
+  beginEndlessBattle,
+  cycleThemeSelection,
+  createGameSession,
+  openShop,
+} from "../state/game-session.js";
 import {
   createBackdrop,
   createBodyTextStyle,
@@ -14,6 +21,12 @@ const TITLE_COMMAND_CREST_KEY = "phaser-ui-title-command-crest";
 
 function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
+}
+
+function getMetaProgress(scene) {
+  const progress = scene.game.registry.get("metaProgress") ?? loadMetaProgress();
+  scene.game.registry.set("metaProgress", progress);
+  return progress;
 }
 
 export class TitleScene extends Phaser.Scene {
@@ -70,14 +83,23 @@ export class TitleScene extends Phaser.Scene {
 
     const helperCopy = "단일 캠페인 루트. 각 전선은 순차적으로 개방된다.";
 
+    const metaProgress = getMetaProgress(this);
+    const isEndlessUnlocked = metaProgress.highestClearedStage >= getStageCount();
+    const commandCount = isEndlessUnlocked ? 3 : 2;
     const buttonWidth = Math.min(layout.contentWidth - (layout.isMobile ? 20 : 160), layout.isMobile ? 280 : 320);
     const buttonHeight = Math.max(
       44,
-      Math.min(layout.isMobile ? 48 : 52, Math.floor((layout.command.height - (layout.isMobile ? 10 : 12)) / 2)),
+      Math.min(
+        layout.isMobile ? 48 : 52,
+        Math.floor((layout.command.height - (layout.isMobile ? 10 : 12) * (commandCount - 1)) / commandCount),
+      ),
     );
     const commandGap = layout.isMobile ? 10 : 12;
-    const primaryButtonY = layout.command.top + buttonHeight / 2;
+    const commandStackHeight = buttonHeight * commandCount + commandGap * (commandCount - 1);
+    const commandStackTop = Math.min(layout.command.top, layout.command.bottom - commandStackHeight);
+    const primaryButtonY = commandStackTop + buttonHeight / 2;
     const secondaryButtonY = primaryButtonY + buttonHeight + commandGap;
+    const endlessButtonY = secondaryButtonY + buttonHeight + commandGap;
     if (!isCompactTitle) {
       this.add
         .text(layout.centerX, layout.focus.bottom - (layout.isMobile ? 58 : 62), helperCopy, {
@@ -127,5 +149,24 @@ export class TitleScene extends Phaser.Scene {
         fontSize: layout.isMobile ? 20 : 24,
       },
     );
+
+    if (isEndlessUnlocked) {
+      createCommandButton(
+        this,
+        layout.centerX,
+        endlessButtonY,
+        buttonWidth,
+        buttonHeight,
+        "Endless Mode",
+        () => {
+          const nextSession = beginEndlessBattle(getSession(this), metaProgress);
+          this.game.registry.set("session", nextSession);
+          this.scene.start("BattleScene", { mode: "endless" });
+        },
+        {
+          fontSize: layout.isMobile ? 20 : 24,
+        },
+      );
+    }
   }
 }

@@ -6,7 +6,8 @@ import {
   markStageCleared,
   selectStageForTheme,
 } from "../../game/campaign-progress.js";
-import { getStageCount, getStageDefinition } from "../../game/stages.js";
+import { ENDLESS_STAGE_NUMBER, getStageCount, getStageDefinition } from "../../game/stages.js";
+import { normalizeMetaProgress } from "../../game/meta-progress.js";
 
 function withScene(session, scene) {
   return {
@@ -35,7 +36,13 @@ function sceneToScreen(scene) {
 }
 
 export function createGameSession() {
-  return withScene(createCampaignProgress(), "title");
+  return withScene(
+    {
+      ...createCampaignProgress(),
+      battleMode: "campaign",
+    },
+    "title",
+  );
 }
 
 export function cycleThemeSelection(session, direction) {
@@ -72,8 +79,26 @@ export function beginBattleFromSelection(session) {
     {
       ...session,
       activeStage: session.selectedStage,
+      battleMode: "campaign",
     },
-      "battle",
+    "battle",
+  );
+}
+
+export function beginEndlessBattle(session, metaProgress) {
+  const normalizedMetaProgress = normalizeMetaProgress(metaProgress);
+  if (normalizedMetaProgress.highestClearedStage < getStageCount()) {
+    return session;
+  }
+
+  return withScene(
+    {
+      ...session,
+      selectedStage: ENDLESS_STAGE_NUMBER,
+      activeStage: ENDLESS_STAGE_NUMBER,
+      battleMode: "endless",
+    },
+    "battle",
   );
 }
 
@@ -88,6 +113,7 @@ export function retryBattle(session) {
       ...session,
       selectedStage: activeStage,
       activeStage,
+      battleMode: session.battleMode ?? "campaign",
     },
     "battle",
   );
@@ -98,6 +124,7 @@ export function returnFromBattleToTheme(session) {
     {
       ...session,
       activeStage: null,
+      battleMode: "campaign",
     },
     "theme",
   );
@@ -108,6 +135,7 @@ export function returnToCampaign(session) {
     {
       ...session,
       activeStage: null,
+      battleMode: "campaign",
     },
     "campaign",
   );
@@ -118,6 +146,7 @@ export function openShop(session) {
     {
       ...session,
       activeStage: null,
+      battleMode: "campaign",
     },
     "shop",
   );
@@ -128,6 +157,7 @@ export function returnToTitle(session) {
     {
       ...session,
       activeStage: null,
+      battleMode: "campaign",
     },
     "title",
   );

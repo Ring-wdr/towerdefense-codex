@@ -28,6 +28,7 @@ import {
   togglePause,
   upgradeTowerAtCursor,
 } from "../src/game/logic.js";
+import { ENDLESS_STAGE_NUMBER } from "../src/game/stages.js";
 
 const logicSource = readFileSync(new URL("../src/game/logic.js", import.meta.url), "utf8");
 
@@ -704,4 +705,23 @@ test("clearing the last stage ends the campaign in victory", () => {
 
   assert.equal(state.status, "victory");
   assert.equal(state.stage, 9);
+});
+
+test("endless mode uses the endless map and continues after boss waves", () => {
+  let state = startGame(createInitialState(ENDLESS_STAGE_NUMBER, undefined, { mode: "endless" }));
+  state.wave = 5;
+  state.spawnedInWave = 1;
+  state.enemies = [];
+  state.nextSpawnTick = 999;
+  state.towers = [createTower("attack", 1, 1)];
+
+  state = tickGame(state);
+
+  assert.equal(state.mode, "endless");
+  assert.equal(state.status, "draft");
+  assert.equal(state.stage, ENDLESS_STAGE_NUMBER);
+  assert.equal(state.wave, 6);
+  assert.equal(state.spawnedInWave, 0);
+  assert.equal(state.towers.length, 1);
+  assert.equal(getWaveDefinition(state.stage, state.wave).boss, false);
 });

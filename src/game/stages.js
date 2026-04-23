@@ -1,5 +1,6 @@
 export const WAVES_PER_STAGE = 5;
 const CELL_SIZE = 60;
+export const ENDLESS_STAGE_NUMBER = 10;
 
 const NORMAL_WAVE_BASES = [
   { count: 8, health: 34, reward: 10, speed: 0.16, interval: 12 },
@@ -228,17 +229,50 @@ export const STAGES = [
   },
 ];
 
+const ENDLESS_STAGE = {
+  number: ENDLESS_STAGE_NUMBER,
+  id: "endless-crucible",
+  name: "무한 균열",
+  theme: "무한 모드",
+  summary: "캠페인 이후 열리는 전용 장기 방어 전장이다.",
+  waveProfile: "endless-crucible",
+  pathPoints: [
+    { x: 0, y: 4 },
+    { x: 2, y: 4 },
+    { x: 2, y: 1 },
+    { x: 6, y: 1 },
+    { x: 6, y: 5 },
+    { x: 9, y: 5 },
+    { x: 9, y: 2 },
+    { x: 4, y: 2 },
+    { x: 4, y: 6 },
+    { x: 11, y: 6 },
+  ],
+};
+
 const GEOMETRY_CACHE = new Map();
 
 export function getStageCount() {
   return STAGES.length;
 }
 
+export function getEndlessStageDefinition() {
+  return ENDLESS_STAGE;
+}
+
 export function getStageDefinition(stageNumber) {
+  if (stageNumber === ENDLESS_STAGE_NUMBER) {
+    return ENDLESS_STAGE;
+  }
+
   return STAGES[clamp(stageNumber, 1, STAGES.length) - 1];
 }
 
 export function getStageWaveDefinition(stageNumber, waveNumber) {
+  if (stageNumber === ENDLESS_STAGE_NUMBER) {
+    return getEndlessWaveDefinition(waveNumber);
+  }
+
   if (waveNumber === WAVES_PER_STAGE) {
     const stageTier = stageNumber - 1;
     return {
@@ -326,6 +360,45 @@ function getStageGeometry(stageNumber) {
     });
   }
   return GEOMETRY_CACHE.get(stage.number);
+}
+
+function getEndlessWaveDefinition(waveNumber) {
+  const safeWave = Math.max(1, Math.floor(waveNumber));
+  const tier = Math.floor((safeWave - 1) / WAVES_PER_STAGE);
+
+  if (safeWave % WAVES_PER_STAGE === 0) {
+    return {
+      boss: true,
+      count: 1,
+      health: 440 + tier * 170,
+      interval: 999,
+      reward: 120 + tier * 28,
+      speed: 0.13 + tier * 0.008,
+      spawnPlan: ["boss"],
+      speciesPool: ["boss"],
+    };
+  }
+
+  const profiles = [
+    ["grunt", "runner", "grunt", "swarmling"],
+    ["runner", "grunt", "shellback", "grunt"],
+    ["swarmling", "wisp", "grunt", "runner"],
+    ["shellback", "swarmling", "wisp", "runner"],
+  ];
+  const profile = profiles[(safeWave - 1) % profiles.length];
+  const count = 10 + Math.floor(safeWave * 1.35) + tier * 2;
+  const spawnPlan = Array.from({ length: count }, (_, index) => profile[index % profile.length]);
+
+  return {
+    boss: false,
+    count,
+    health: 44 + safeWave * 10 + tier * 18,
+    interval: Math.max(5, 12 - Math.min(5, tier)),
+    reward: 12 + safeWave * 2,
+    speed: 0.17 + Math.min(0.12, safeWave * 0.006),
+    spawnPlan,
+    speciesPool: Array.from(new Set(spawnPlan)),
+  };
 }
 
 function buildPathSegments(points) {
