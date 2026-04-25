@@ -20,6 +20,15 @@ test("main entry follows the official phaser vite template shape with a lazy gam
   assert.doesNotMatch(mainSource, /from "\.\/phaser\/game\.js"/);
 });
 
+test("battle host is the only component that reaches for the Phaser bridge", () => {
+  const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+  const battleHostSource = readFileSync(new URL("../src/app/BattleHost.jsx", import.meta.url), "utf8");
+
+  assert.match(appSource, /BattleHost/);
+  assert.doesNotMatch(appSource, /<PhaserGame/);
+  assert.match(battleHostSource, /PhaserGame/);
+});
+
 test("package scripts match the latest Phaser Vite template defaults", () => {
   assert.equal(packageJson.scripts.dev, "vite");
   assert.equal(packageJson.scripts.start, "vite");

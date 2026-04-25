@@ -241,6 +241,17 @@ test("ui shell exposes only the phaser mount and battle controls", () => {
   assert.doesNotMatch(html, /id="stage-detail-card"/);
 });
 
+test("app shell keeps battle controls hidden outside battle and exposes React menu screens", () => {
+  const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+
+  assert.match(appSource, /TitleScreen/);
+  assert.match(appSource, /CampaignScreen/);
+  assert.match(appSource, /ThemeScreen/);
+  assert.match(appSource, /ShopScreen/);
+  assert.match(appSource, /BattleHost/);
+  assert.match(appSource, /<section id="battle-controls"[\s\S]*hidden/);
+});
+
 test("battle controls hydrate tower icon images from imported assets", () => {
   assert.match(mainSource, /DOMContentLoaded/);
   assert.match(mainSource, /import\("\.\/game\/main\.js"\)/);
