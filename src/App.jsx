@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, createIcons } from "lucide";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
@@ -92,6 +92,7 @@ function selectCampaignFocus(appState, stageNumber) {
 }
 
 export default function App() {
+  const battleControlsRef = useRef(null);
   const [appState, setAppState] = useState(() =>
     hydrateAppState(createAppState().session, loadMetaProgress()),
   );
@@ -203,6 +204,7 @@ export default function App() {
       {appState.scene === "battle" && (
         <BattleHost
           launchPayload={appState.battleLaunch}
+          controlsRootRef={battleControlsRef}
           onExitToMenu={(session, metaProgress) => {
             const saved = saveMetaProgress(metaProgress);
             setAppState((current) => returnFromBattle({ ...current, metaProgress: saved }, session));
@@ -210,7 +212,7 @@ export default function App() {
         />
       )}
 
-      <section id="battle-controls" className="battle-controls" hidden>
+      <section id="battle-controls" className="battle-controls" hidden ref={battleControlsRef}>
         <button id="start-button" className="board-pause-button board-start-button" type="button">
           Start
         </button>

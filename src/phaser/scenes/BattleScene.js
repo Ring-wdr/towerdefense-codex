@@ -160,20 +160,44 @@ function getSession(scene) {
   return scene.game.registry.get("session") ?? createGameSession();
 }
 
-function getControlElements() {
+function getUiBridge(scene) {
+  return scene.game.registry.get("uiBridge") ?? { onExitToMenu: null, controlsRoot: null };
+}
+
+function getControlElements(scene) {
+  const bridge = getUiBridge(scene);
+  const root = bridge.controlsRoot ?? null;
+
+  if (!root) {
+    return {
+      root: null,
+      startButton: null,
+      pauseButton: null,
+      towerActions: null,
+      upgradeAction: null,
+      deleteAction: null,
+      sidebar: null,
+      dock: null,
+      towerButtons: [],
+      moveButtons: [],
+      actionButtons: [],
+      selectionSummaries: [],
+    };
+  }
+
   return {
-    root: document.getElementById("battle-controls"),
-    startButton: document.getElementById("start-button"),
-    pauseButton: document.getElementById("pause-button"),
-    towerActions: document.getElementById("tower-actions"),
-    upgradeAction: document.getElementById("upgrade-action"),
-    deleteAction: document.getElementById("delete-action"),
-    sidebar: document.querySelector(".sidebar"),
-    dock: document.getElementById("tower-buttons-dock"),
-    towerButtons: Array.from(document.querySelectorAll("[data-tower]")),
-    moveButtons: Array.from(document.querySelectorAll("[data-move]")),
-    actionButtons: Array.from(document.querySelectorAll("[data-action]")),
-    selectionSummaries: Array.from(document.querySelectorAll("[data-selection-summary]")),
+    root,
+    startButton: root.querySelector("#start-button"),
+    pauseButton: root.querySelector("#pause-button"),
+    towerActions: root.querySelector("#tower-actions"),
+    upgradeAction: root.querySelector("#upgrade-action"),
+    deleteAction: root.querySelector("#delete-action"),
+    sidebar: root.querySelector(".sidebar"),
+    dock: root.querySelector("#tower-buttons-dock"),
+    towerButtons: Array.from(root.querySelectorAll("[data-tower]")),
+    moveButtons: Array.from(root.querySelectorAll("[data-move]")),
+    actionButtons: Array.from(root.querySelectorAll("[data-action]")),
+    selectionSummaries: Array.from(root.querySelectorAll("[data-selection-summary]")),
   };
 }
 
@@ -315,7 +339,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   bindBattleControls() {
-    this.controls = getControlElements();
+    this.controls = getControlElements(this);
 
     if (!this.controls.root) {
       return;
@@ -529,17 +553,24 @@ export class BattleScene extends Phaser.Scene {
     this.handledAttackEffectIds.clear();
   }
 
-  returnToTheme() {
-    if (this.state.mode === "endless") {
-      this.game.registry.set("session", returnToTitle(getSession(this)));
-      this.setBattleControlsVisible(false);
-      return;
-    }
-
-    const nextSession = returnFromBattleToTheme(selectStage(getSession(this), this.state.stage));
+  exitToMenu(nextSession) {
+    const bridge = getUiBridge(this);
+    const metaProgress = this.game.registry.get("metaProgress") ?? loadMetaProgress();
 
     this.game.registry.set("session", nextSession);
     this.setBattleControlsVisible(false);
+
+    if (typeof bridge.onExitToMenu === "function") {
+      bridge.onExitToMenu(nextSession, metaProgress);
+    }
+  }
+
+  returnToTheme() {
+    const nextSession = this.state.mode === "endless"
+      ? returnToTitle(getSession(this))
+      : returnFromBattleToTheme(selectStage(getSession(this), this.state.stage));
+
+    this.exitToMenu(nextSession);
   }
 
   handleResize() {
@@ -709,9 +740,7 @@ export class BattleScene extends Phaser.Scene {
       const completedStage = getCompletedBattleStage(session, this.state);
       this.persistStageClearRewards(completedStage);
       const progressedSession = completeBattleStage(session, completedStage);
-      this.game.registry.set("session", progressedSession);
-      this.setBattleControlsVisible(false);
-      this.scene.start("ThemeScene");
+      this.exitToMenu(progressedSession);
       return;
     }
 
@@ -731,7 +760,7 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
-      this.scene.start("ThemeScene");
+      this.exitToMenu(nextSession);
     }
   }
 
