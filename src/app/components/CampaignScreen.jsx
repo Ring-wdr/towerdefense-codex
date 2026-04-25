@@ -1,4 +1,6 @@
 import MenuFrame from "./MenuFrame.jsx";
+import frameStyles from "./MenuFrame.module.css";
+import screenStyles from "./CampaignScreen.module.css";
 
 const THEME_TONES = {
   "기초 방어": "olive",
@@ -10,6 +12,13 @@ function getThemeTone(theme) {
   return THEME_TONES[theme] ?? "olive";
 }
 
+function formatStageRange(stageNumbers) {
+  const firstStage = stageNumbers[0];
+  const lastStage = stageNumbers[stageNumbers.length - 1];
+
+  return firstStage === lastStage ? `Stage ${firstStage}` : `Stages ${firstStage}-${lastStage}`;
+}
+
 export default function CampaignScreen({ data, onBack, onPreviewTheme, onOpenBriefing }) {
   const selectedTheme = data.find((entry) => entry.selected) ?? data[0] ?? null;
 
@@ -19,71 +28,85 @@ export default function CampaignScreen({ data, onBack, onPreviewTheme, onOpenBri
         kicker="Campaign Map"
         title="Stage Command"
         tone="olive"
-        actions={
-          <button className="menu-button" type="button" onClick={onBack}>
+        className={screenStyles.root}
+        containerClassName={screenStyles.container}
+        footerClassName={screenStyles.footer}
+        footerContent={
+          <button className={frameStyles.button} type="button" onClick={onBack}>
             Back
           </button>
         }
       >
-        <article className="menu-card campaign-hero">
-          <p className="campaign-hero__summary">아직 표시할 전선 정보가 없다.</p>
+        <article className={`${frameStyles.panel} ${screenStyles.hero}`}>
+          <p className={screenStyles.summary}>아직 표시할 전선 정보가 없다.</p>
         </article>
       </MenuFrame>
     );
   }
 
   const selectedStage = selectedTheme.previewStage;
+  const footerActions = (
+    <>
+      <button className={frameStyles.button} type="button" onClick={onBack}>
+        Back
+      </button>
+      <button
+        className={frameStyles.button}
+        type="button"
+        onClick={() => onOpenBriefing(selectedStage.number)}
+      >
+        Briefing
+      </button>
+    </>
+  );
 
   return (
     <MenuFrame
       kicker="Campaign Map"
-      title={selectedTheme.theme}
+      title="Stage Command"
       tone={getThemeTone(selectedTheme.theme)}
-      actions={
-        <button className="menu-button" type="button" onClick={onBack}>
-          Back
-        </button>
+      className={screenStyles.root}
+      containerClassName={screenStyles.container}
+      footerClassName={screenStyles.footer}
+      headerContent={
+        <p className={screenStyles.headerStatus}>
+          {selectedTheme.theme} · {formatStageRange(selectedTheme.stageNumbers)}
+        </p>
       }
+      footerContent={footerActions}
     >
-      <section className="campaign-layout">
-        <article className="menu-card campaign-hero">
-          <p className="campaign-hero__eyebrow">STAGE {selectedStage.number}</p>
-          <h2 className="campaign-hero__title">{selectedStage.name}</h2>
-          <p className="campaign-hero__summary">{selectedStage.summary}</p>
-          <div className="campaign-hero__meta">
-            <p className="campaign-hero__meta-item">
-              <span>Theme</span>
-              <strong>{selectedTheme.theme}</strong>
-            </p>
-            <p className="campaign-hero__meta-item">
+      <section className={screenStyles.stack}>
+        <article className={`${frameStyles.panel} ${screenStyles.hero}`}>
+          <p className={screenStyles.eyebrow}>{selectedTheme.theme}</p>
+          <p className={screenStyles.route}>{formatStageRange(selectedTheme.stageNumbers)}</p>
+          <h2 className={screenStyles.title}>{selectedStage.name}</h2>
+          <p className={screenStyles.summary}>{selectedStage.summary}</p>
+          <div className={screenStyles.meta}>
+            <p className={screenStyles.stat}>
               <span>Progress</span>
               <strong>
                 {selectedTheme.clearedCount}/{selectedTheme.stageNumbers.length} cleared
               </strong>
             </p>
           </div>
-          <button
-            className="menu-button campaign-hero__action"
-            type="button"
-            onClick={() => onOpenBriefing(selectedStage.number)}
-          >
-            Briefing
-          </button>
         </article>
 
-        <section className="campaign-grid" aria-label="Campaign themes">
+        <section className={screenStyles.grid} aria-label="Campaign themes">
           {data.map((theme) => (
             <button
               key={theme.theme}
-              className={`menu-card campaign-card${theme.selected ? " is-selected" : ""}`}
+              className={[
+                frameStyles.panel,
+                screenStyles.card,
+                theme.selected ? screenStyles.selected : "",
+              ].filter(Boolean).join(" ")}
               type="button"
               onClick={() => onPreviewTheme(theme.previewStage.number)}
             >
-              <p className="campaign-card__kicker">{theme.theme}</p>
-              <h2 className="campaign-card__title">{theme.previewStage.name}</h2>
-              <p className="campaign-card__summary">{theme.previewStage.summary}</p>
-              <p className="campaign-card__progress">
-                {theme.clearedCount}/{theme.stageNumbers.length} cleared
+              <p className={screenStyles.label}>{theme.selected ? "Selected Front" : "Open Front"}</p>
+              <h2 className={screenStyles.cardTitle}>{theme.theme}</h2>
+              <p className={screenStyles.metaText}>
+                {formatStageRange(theme.stageNumbers)} · {theme.clearedCount}/{theme.stageNumbers.length} cleared
               </p>
             </button>
           ))}

@@ -1,0 +1,131 @@
+.container {
+  display: grid;
+  min-height: 0;
+  gap: 18px;
+}
+
+.footer {
+  margin-top: 20px;
+}
+
+.headerStatus {
+  margin: 0;
+  color: #d6ae72;
+  font: 700 0.92rem/1.1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.briefing {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  background: rgba(26, 35, 29, 0.96);
+}
+
+.eyebrow,
+.stageLabel,
+.stageStatus {
+  margin: 0;
+  color: #d6ae72;
+  font: 700 0.9rem/1.1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.title,
+.stageTitle {
+  margin: 0;
+  color: #f3ecde;
+  font: 700 clamp(1.4rem, 3vw, 2.15rem)/1.02 "Black Ops One", system-ui;
+}
+
+.copy,
+.stageMeta {
+  margin: 0;
+  color: #f3ecde;
+  font: 500 1rem/1.55 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stat {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 240, 214, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.stat span {
+  color: #b6b19f;
+  font: 700 0.82rem/1.1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.stat strong {
+  color: #f3ecde;
+  font: 700 0.98rem/1.25 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.stageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.stageCard {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.stageCard:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(255, 240, 214, 0.34);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.3);
+}
+
+.selected {
+  outline: 2px solid rgba(214, 174, 114, 0.5);
+}
+
+.stageStatus {
+  margin-top: auto;
+  color: #b6b19f;
+}
+
+.stageMeta {
+  color: #f3ecde;
+  font-size: 0.96rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

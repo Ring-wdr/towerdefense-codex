@@ -1,4 +1,6 @@
 import MenuFrame from "./MenuFrame.jsx";
+import frameStyles from "./MenuFrame.module.css";
+import screenStyles from "./ThemeScreen.module.css";
 
 const LOCKED_COPY = "이 구간은 아직 봉쇄 상태다. 캠페인에서 앞선 전장을 먼저 확보해야 한다.";
 const THEME_TONES = {
@@ -27,6 +29,10 @@ function getNodeStatus(stageNumber, locked, selected, session) {
   return "READY";
 }
 
+function getStagePositionLabel(index, total) {
+  return `Route ${index + 1} / ${total}`;
+}
+
 export default function ThemeScreen({ data, session, onBack, onSelectStage, onEnterBattle }) {
   const stage = data?.stage ?? null;
 
@@ -36,14 +42,16 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
         kicker="Campaign Front"
         title="Stage Briefing"
         tone="olive"
-        actions={
-          <button className="menu-button" type="button" onClick={onBack}>
+        containerClassName={screenStyles.container}
+        footerClassName={screenStyles.footer}
+        footerContent={
+          <button className={frameStyles.button} type="button" onClick={onBack}>
             Back
           </button>
         }
       >
-        <article className="menu-card theme-briefing">
-          <p className="theme-briefing__copy">선택된 전장 정보가 없다.</p>
+        <article className={`${frameStyles.panel} ${screenStyles.briefing}`}>
+          <p className={screenStyles.copy}>선택된 전장 정보가 없다.</p>
         </article>
       </MenuFrame>
     );
@@ -58,15 +66,18 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
   return (
     <MenuFrame
       kicker={`${stage.theme} 전선`}
-      title={stage.name}
+      title="Stage Briefing"
       tone={getThemeTone(stage.theme)}
-      actions={
+      containerClassName={screenStyles.container}
+      footerClassName={screenStyles.footer}
+      headerContent={<p className={screenStyles.headerStatus}>{routeLabel}</p>}
+      footerContent={
         <>
-          <button className="menu-button" type="button" onClick={onBack}>
+          <button className={frameStyles.button} type="button" onClick={onBack}>
             Back
           </button>
           <button
-            className="menu-button"
+            className={frameStyles.button}
             type="button"
             onClick={battleLocked ? undefined : onEnterBattle}
             disabled={battleLocked}
@@ -76,19 +87,28 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
         </>
       }
     >
-      <section className="theme-layout">
-        <article className="menu-card theme-briefing">
-          <p className="theme-briefing__eyebrow">Stage {stage.number}</p>
-          <p className="theme-briefing__route">{routeLabel}</p>
-          <h2 className="theme-briefing__title">{battleLocked ? "ENTRY LOCKED" : "TACTICAL BRIEF"}</h2>
-          <p className="theme-briefing__copy">{battleLocked ? LOCKED_COPY : stage.summary}</p>
+      <section className={screenStyles.layout}>
+        <article className={`${frameStyles.panel} ${screenStyles.briefing}`}>
+          <p className={screenStyles.eyebrow}>{stage.theme}</p>
+          <h2 className={screenStyles.title}>{stage.name}</h2>
+          <p className={screenStyles.copy}>{battleLocked ? LOCKED_COPY : stage.summary}</p>
+          <div className={screenStyles.meta}>
+            <p className={screenStyles.stat}>
+              <span>Status</span>
+              <strong>{battleLocked ? "Entry Locked" : "Ready to Deploy"}</strong>
+            </p>
+          </div>
         </article>
 
-        <section className="theme-stage-list" aria-label={`${stage.theme} stages`}>
-          {data.stageNumbers.map(({ stage: entryStage, locked, selected }) => (
+        <section className={screenStyles.stageGrid} aria-label={`${stage.theme} stages`}>
+          {data.stageNumbers.map(({ stage: entryStage, locked, selected }, index) => (
             <button
               key={entryStage.number}
-              className={`menu-card theme-stage-node${selected ? " is-selected" : ""}`}
+              className={[
+                frameStyles.panel,
+                screenStyles.stageCard,
+                selected ? screenStyles.selected : "",
+              ].filter(Boolean).join(" ")}
               type="button"
               onClick={() => {
                 if (!locked) {
@@ -96,11 +116,12 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
                 }
               }}
               disabled={locked}
+              data-state={locked ? "locked" : selected ? "selected" : "ready"}
             >
-              <p className="theme-stage-node__eyebrow">STAGE {entryStage.number}</p>
-              <h2 className="theme-stage-node__title">{entryStage.name}</h2>
-              <p className="theme-stage-node__summary">{entryStage.summary}</p>
-              <p className="theme-stage-node__status">
+              <p className={screenStyles.stageLabel}>{getStagePositionLabel(index, data.stageNumbers.length)}</p>
+              <h2 className={screenStyles.stageTitle}>{entryStage.name}</h2>
+              <p className={screenStyles.stageMeta}>Stage {entryStage.number}</p>
+              <p className={screenStyles.stageStatus}>
                 {getNodeStatus(entryStage.number, locked, selected, session)}
               </p>
             </button>

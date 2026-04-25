@@ -1,0 +1,10 @@
+.appRoot {
+  position: relative;
+  min-height: 100vh;
+}
+
+@supports (min-height: 100dvh) {
+  .appRoot {
+    min-height: 100dvh;
+  }
+}

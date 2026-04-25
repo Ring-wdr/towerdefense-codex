@@ -1,0 +1,127 @@
+.root {
+  height: 100vh;
+  padding-bottom: 28px;
+}
+
+@supports (height: 100dvh) {
+  .root {
+    height: 100dvh;
+  }
+}
+
+.container {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.footer {
+  margin-top: 20px;
+}
+
+.headerStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.headerStat {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 240, 214, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3ecde;
+  font: 700 0.98rem/1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  background: rgba(26, 35, 29, 0.96);
+}
+
+.category {
+  color: #d6ae72;
+  font: 700 0.88rem/1.1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.level {
+  margin: 0;
+  color: #f3ecde;
+  font: 700 1.05rem/1.25 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.copy,
+.detail {
+  margin: 0;
+  color: #f3ecde;
+  font: 500 1rem/1.55 "Barlow Condensed", sans-serif;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 8px;
+  align-content: start;
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  align-content: start;
+}
+
+.cardGlobal {
+  border-color: rgba(214, 174, 114, 0.42);
+}
+
+.cardTower {
+  border-color: rgba(143, 176, 149, 0.36);
+}
+
+.cardCombat {
+  border-color: rgba(137, 167, 207, 0.42);
+}
+
+.cardCombat .category {
+  color: #89a7cf;
+}
+
+.title {
+  margin: 0;
+  color: #f3ecde;
+  font: 700 clamp(1.2rem, 2vw, 1.55rem)/1.05 "Black Ops One", system-ui;
+}
+
+.action {
+  justify-self: start;
+  min-width: 108px;
+  margin-top: auto;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .root {
+    padding-bottom: 20px;
+  }
+}

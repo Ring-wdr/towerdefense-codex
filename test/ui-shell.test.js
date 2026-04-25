@@ -5,15 +5,22 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const mainEntrypointSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+const appModuleSource = readFileSync(new URL("../src/App.module.css", import.meta.url), "utf8");
 const screenDataSource = readFileSync(new URL("../src/app/screen-data.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
 const phaserGameSource = readFileSync(new URL("../src/phaser/game.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
+const menuFrameSource = readFileSync(new URL("../src/app/components/MenuFrame.jsx", import.meta.url), "utf8");
+const menuFrameModuleSource = readFileSync(new URL("../src/app/components/MenuFrame.module.css", import.meta.url), "utf8");
 const titleScreenSource = readFileSync(new URL("../src/app/components/TitleScreen.jsx", import.meta.url), "utf8");
+const titleScreenModuleSource = readFileSync(new URL("../src/app/components/TitleScreen.module.css", import.meta.url), "utf8");
 const campaignScreenSource = readFileSync(new URL("../src/app/components/CampaignScreen.jsx", import.meta.url), "utf8");
+const campaignScreenModuleSource = readFileSync(new URL("../src/app/components/CampaignScreen.module.css", import.meta.url), "utf8");
 const themeScreenSource = readFileSync(new URL("../src/app/components/ThemeScreen.jsx", import.meta.url), "utf8");
+const themeScreenModuleSource = readFileSync(new URL("../src/app/components/ThemeScreen.module.css", import.meta.url), "utf8");
 const shopScreenSource = readFileSync(new URL("../src/app/components/ShopScreen.jsx", import.meta.url), "utf8");
+const shopScreenModuleSource = readFileSync(new URL("../src/app/components/ShopScreen.module.css", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 function extractMethodBody(source, methodName) {
@@ -252,6 +259,23 @@ test("app shell keeps battle controls hidden outside battle and exposes React me
   assert.match(appSource, /<section id="battle-controls"[\s\S]*hidden/);
 });
 
+test("react menu screens import component css modules instead of the old shared menu stylesheet", () => {
+  assert.match(appSource, /import appStyles from "\.\/App\.module\.css";/);
+  assert.doesNotMatch(appSource, /menu-shell\.css/);
+  assert.match(menuFrameSource, /import styles from "\.\/MenuFrame\.module\.css";/);
+  assert.match(titleScreenSource, /import screenStyles from "\.\/TitleScreen\.module\.css";/);
+  assert.match(campaignScreenSource, /import screenStyles from "\.\/CampaignScreen\.module\.css";/);
+  assert.match(themeScreenSource, /import screenStyles from "\.\/ThemeScreen\.module\.css";/);
+  assert.match(shopScreenSource, /import screenStyles from "\.\/ShopScreen\.module\.css";/);
+
+  assert.match(appModuleSource, /\.appRoot\s*\{/);
+  assert.match(menuFrameModuleSource, /\.frame\s*\{/);
+  assert.match(titleScreenModuleSource, /\.briefing\s*\{/);
+  assert.match(campaignScreenModuleSource, /\.layout\s*\{/);
+  assert.match(themeScreenModuleSource, /\.layout\s*\{/);
+  assert.match(shopScreenModuleSource, /\.grid\s*\{/);
+});
+
 test("react entry mounts the app shell and app source hydrates tower icon markup", () => {
   assert.match(mainEntrypointSource, /ReactDOM\.createRoot\(document\.getElementById\("root"\)\)\.render\(<App \/>\);/);
   assert.match(appSource, /from "lucide-react"/);
@@ -263,28 +287,33 @@ test("react entry mounts the app shell and app source hydrates tower icon markup
   assert.match(gameMainSource, /createGameSession/);
   assert.match(gameMainSource, /loadMetaProgress/);
   assert.match(gameMainSource, /createGame\(mountNode,\s*\{/);
-  assert.match(gameMainSource, /battleOnly:\s*Boolean\(launchPayload\)/);
+  assert.doesNotMatch(gameMainSource, /battleOnly:\s*Boolean\(launchPayload\)/);
   assert.match(gameMainSource, /phaserGame\.registry\.set\("session",\s*session\);/);
   assert.match(gameMainSource, /phaserGame\.registry\.set\("metaProgress",\s*metaProgress\);/);
 });
 
-test("phaser bootstrap supports a battle-only scene list while keeping legacy scenes available off-path", () => {
-  assert.match(phaserGameSource, /import\s+\{\s*TitleScene\s*\}\s+from "\.\/scenes\/TitleScene\.js";/);
-  assert.match(phaserGameSource, /import\s+\{\s*ShopScene\s*\}\s+from "\.\/scenes\/ShopScene\.js";/);
-  assert.match(phaserGameSource, /const battleOnly = options\.battleOnly === true;/);
-  assert.match(phaserGameSource, /scene:\s*battleOnly\s*\?\s*\[BattleScene,\s*OverlayScene\]/);
-  assert.match(phaserGameSource, /:\s*\[TitleScene,\s*CampaignScene,\s*ThemeScene,\s*ShopScene,\s*BattleScene,\s*OverlayScene\]/);
+test("phaser bootstrap only registers battle and overlay scenes for the active runtime", () => {
+  assert.doesNotMatch(phaserGameSource, /TitleScene/);
+  assert.doesNotMatch(phaserGameSource, /CampaignScene/);
+  assert.doesNotMatch(phaserGameSource, /ThemeScene/);
+  assert.doesNotMatch(phaserGameSource, /ShopScene/);
+  assert.match(phaserGameSource, /import\s+\{\s*OverlayScene\s*\}\s+from "\.\/scenes\/OverlayScene\.js";/);
+  assert.match(phaserGameSource, /import\s+\{\s*BattleScene\s*\}\s+from "\.\/scenes\/BattleScene\.js";/);
+  assert.match(phaserGameSource, /scene:\s*\[BattleScene,\s*OverlayScene\]/);
 });
 
 test("react title and campaign screens preserve the main menu actions", () => {
   assert.match(titleScreenSource, />\s*Shop\s*</);
   assert.match(titleScreenSource, /onOpenShop/);
+  assert.match(titleScreenSource, /footerContent=/);
   assert.match(titleScreenSource, />\s*Start Campaign\s*</);
 
   assert.match(campaignScreenSource, />\s*Back\s*</);
   assert.match(campaignScreenSource, />\s*Briefing\s*</);
   assert.match(campaignScreenSource, /onPreviewTheme/);
   assert.match(campaignScreenSource, /onOpenBriefing/);
+  assert.match(campaignScreenSource, /headerContent=/);
+  assert.match(campaignScreenSource, /footerContent=/);
 });
 
 test("title screen exposes endless mode only through campaign-clear meta progress", () => {
@@ -437,7 +466,8 @@ test("scene and overlay copy use the refreshed briefing voice", () => {
   assert.match(campaignScreenSource, /Briefing/);
 
   assert.match(themeScreenSource, /\$\{stage\.theme\} 전선/);
-  assert.match(themeScreenSource, /ENTRY LOCKED/);
+  assert.match(themeScreenSource, /Entry Locked/);
+  assert.match(themeScreenSource, /Stage Briefing/);
   assert.match(themeScreenSource, /이 구간은 아직 봉쇄 상태다\. 캠페인에서 앞선 전장을 먼저 확보해야 한다\./);
   assert.doesNotMatch(themeScreenSource, /LOCKED APPROACH/);
   assert.doesNotMatch(themeScreenSource, /\$\{stage\.theme\.toUpperCase\(\)\} FRONT/);
@@ -464,20 +494,61 @@ test("draft overlay separates summary, description, and action rows on compact c
 test("shop screen renders combat unlock cards with a dedicated category style", () => {
   assert.match(shopScreenSource, /SHOP_CARD_STYLE_TOKENS/);
   assert.match(shopScreenSource, /combat:\s*"combat"/);
-  assert.match(shopScreenSource, /shop-card--\$\{styleToken\}/);
+  assert.match(shopScreenSource, /screenStyles\[`card\$\{styleToken\[0\]\.toUpperCase\(\)\}\$\{styleToken\.slice\(1\)\}`\]/);
 });
 
 test("campaign screen keeps preview selection separate from the briefing action", () => {
   assert.match(campaignScreenSource, /onPreviewTheme/);
   assert.match(campaignScreenSource, /onOpenBriefing/);
-  assert.match(campaignScreenSource, /campaign-hero__action/);
+  assert.match(campaignScreenSource, /footerContent=\{footerActions\}/);
   assert.match(campaignScreenSource, /Campaign themes/);
 });
 
+test("campaign screen removes duplicated theme copy and fits a fixed viewport shell", () => {
+  assert.match(campaignScreenSource, /title="Stage Command"/);
+  assert.match(campaignScreenSource, /screenStyles\.route/);
+  assert.match(campaignScreenSource, /screenStyles\.label/);
+  assert.match(campaignScreenSource, /screenStyles\.metaText/);
+  assert.doesNotMatch(campaignScreenSource, /<span>\s*Theme\s*<\/span>/);
+  assert.doesNotMatch(campaignScreenSource, /campaign-card__summary/);
+  assert.match(campaignScreenModuleSource, /\.root\s*\{/);
+  assert.match(campaignScreenModuleSource, /height:\s*100vh;/);
+  assert.match(campaignScreenModuleSource, /height:\s*100dvh;/);
+  assert.match(campaignScreenModuleSource, /\.body\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(campaignScreenModuleSource, /\.layout\s*\{[\s\S]*min-height:\s*0;/);
+});
+
+test("theme screen removes duplicated stage detail text and keeps the stage chooser compact", () => {
+  assert.match(themeScreenSource, /title="Stage Briefing"/);
+  assert.match(themeScreenSource, /headerContent=/);
+  assert.match(themeScreenSource, /footerContent=/);
+  assert.match(themeScreenSource, /screenStyles\.meta/);
+  assert.match(themeScreenSource, /screenStyles\.stageGrid/);
+  assert.match(themeScreenSource, /screenStyles\.stageLabel/);
+  assert.match(themeScreenSource, /screenStyles\.stageMeta/);
+  assert.doesNotMatch(themeScreenSource, /screenStyles\.stageSummary/);
+
+  assert.match(themeScreenModuleSource, /\.layout\s*\{/);
+  assert.match(themeScreenModuleSource, /\.stageGrid\s*\{/);
+  assert.match(themeScreenModuleSource, /\.stageCard\s*\{/);
+  assert.match(themeScreenModuleSource, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(180px,\s*1fr\)\)/);
+});
+
+test("global stylesheet no longer owns react menu frame and screen layout selectors", () => {
+  assert.doesNotMatch(stylesSource, /\.menu-frame/);
+  assert.doesNotMatch(stylesSource, /\.campaign-layout/);
+  assert.doesNotMatch(stylesSource, /\.theme-layout/);
+  assert.doesNotMatch(stylesSource, /\.shop-grid/);
+  assert.doesNotMatch(stylesSource, /\.title-briefing/);
+});
+
 test("shop screen preserves top-level progression stats above the upgrade grid", () => {
-  assert.match(shopScreenSource, /shop-status__stats/);
-  assert.match(shopScreenSource, /Currency/);
-  assert.match(shopScreenSource, /Cleared/);
+  assert.match(shopScreenSource, /headerContent=/);
+  assert.match(shopScreenSource, /footerContent=/);
+  assert.match(shopScreenSource, /screenStyles\.headerStats/);
+  assert.match(shopScreenSource, /screenStyles\.headerStat/);
+  assert.match(shopScreenSource, /metaProgress\.currency/);
+  assert.match(shopScreenSource, /highestClearedStage/);
   assert.match(shopScreenSource, /aria-label="Meta shop upgrades"/);
 });
 

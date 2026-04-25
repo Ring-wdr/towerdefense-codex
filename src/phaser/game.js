@@ -1,13 +1,8 @@
 import * as Phaser from "phaser";
-import { TitleScene } from "./scenes/TitleScene.js";
-import { CampaignScene } from "./scenes/CampaignScene.js";
-import { ThemeScene } from "./scenes/ThemeScene.js";
-import { ShopScene } from "./scenes/ShopScene.js";
 import { OverlayScene } from "./scenes/OverlayScene.js";
 import { BattleScene } from "./scenes/BattleScene.js";
 
 export function createGame(parent, options = {}) {
-  const battleOnly = options.battleOnly === true;
   const callbacks = {};
 
   if (options.preBoot !== undefined) {
@@ -29,8 +24,6 @@ export function createGame(parent, options = {}) {
       width: 1280,
       height: 720,
     },
-    scene: battleOnly
-      ? [BattleScene, OverlayScene]
-      : [TitleScene, CampaignScene, ThemeScene, ShopScene, BattleScene, OverlayScene],
+    scene: [BattleScene, OverlayScene],
   });
 }

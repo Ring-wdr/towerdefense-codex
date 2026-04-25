@@ -1,13 +1,35 @@
-export default function MenuFrame({ kicker, title, children, tone = "olive", actions = null, className = "" }) {
+import styles from "./MenuFrame.module.css";
+
+function joinClasses(...values) {
+  return values.filter(Boolean).join(" ");
+}
+
+export default function MenuFrame({
+  kicker,
+  title,
+  tone = "olive",
+  className = "",
+  headerClassName = "",
+  containerClassName = "",
+  footerClassName = "",
+  headerContent = null,
+  footerContent = null,
+  children,
+}) {
   return (
-    <section className={`menu-frame menu-frame--${tone}${className ? ` ${className}` : ""}`}>
-      <div className="menu-frame__backdrop" aria-hidden="true" />
-      <header className="menu-frame__header">
-        <p className="menu-frame__kicker">{kicker}</p>
-        <h1 className="menu-frame__title">{title}</h1>
+    <section className={joinClasses(styles.frame, styles[tone], className)}>
+      <div className={styles.backdrop} aria-hidden="true" />
+      <header className={joinClasses(styles.header, headerClassName)}>
+        <div className={styles.titleLockup}>
+          <p className={styles.kicker}>{kicker}</p>
+          <h1 className={styles.title}>{title}</h1>
+        </div>
+        {headerContent ? <div className={styles.headerMeta}>{headerContent}</div> : null}
       </header>
-      <div className="menu-frame__body">{children}</div>
-      {actions ? <footer className="menu-frame__actions">{actions}</footer> : null}
+      <div className={joinClasses(styles.container, containerClassName)}>{children}</div>
+      {footerContent ? (
+        <footer className={joinClasses(styles.footer, footerClassName)}>{footerContent}</footer>
+      ) : null}
     </section>
   );
 }

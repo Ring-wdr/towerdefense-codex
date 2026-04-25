@@ -23,7 +23,7 @@ import ThemeScreen from "./app/components/ThemeScreen.jsx";
 import TitleScreen from "./app/components/TitleScreen.jsx";
 import { purchaseUpgrade } from "./game/meta-shop.js";
 import { loadMetaProgress, saveMetaProgress } from "./game/meta-progress.js";
-import "./app/menu-shell.css";
+import appStyles from "./App.module.css";
 
 const BROWSER_SAFE_BOTTOM_VAR = "--browser-safe-bottom";
 const TOWER_CHOICES = [
@@ -110,7 +110,7 @@ export default function App() {
   const shopData = getShopScreenData(appState.metaProgress);
 
   return (
-    <main className="app-root">
+    <main className={appStyles.appRoot}>
       {appState.scene === "title" && (
         <TitleScreen
           data={titleData}

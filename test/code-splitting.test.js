@@ -1,19 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const mainEntrypointSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const battleHostSource = readFileSync(new URL("../src/app/BattleHost.jsx", import.meta.url), "utf8");
 const phaserGameSource = readFileSync(new URL("../src/PhaserGame.jsx", import.meta.url), "utf8");
+const phaserBootstrapSource = readFileSync(new URL("../src/phaser/game.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
+const phaserComponentsSource = readFileSync(new URL("../src/phaser/ui/components.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const viteConfigSource = readFileSync(new URL("../vite.config.js", import.meta.url), "utf8");
 const phaserSourceFiles = [
   "src/phaser/game.js",
-  "src/phaser/scenes/TitleScene.js",
-  "src/phaser/scenes/CampaignScene.js",
-  "src/phaser/scenes/ThemeScene.js",
   "src/phaser/scenes/BattleScene.js",
   "src/phaser/scenes/OverlayScene.js",
 ];
@@ -38,16 +37,55 @@ test("phaser bridge lazy-loads battle runtime and forwards the DOM shell bridge"
   assert.match(phaserGameSource, /controlsRoot:\s*controlsRootRef\?\.current\s*\?\?\s*null/);
 });
 
+test("battle runtime excludes menu scene modules from the active phaser bootstrap", () => {
+  assert.match(gameMainSource, /from "\.\.\/phaser\/game\.js"/);
+  assert.doesNotMatch(phaserBootstrapSource, /TitleScene/);
+  assert.doesNotMatch(phaserBootstrapSource, /CampaignScene/);
+  assert.doesNotMatch(phaserBootstrapSource, /ThemeScene/);
+  assert.doesNotMatch(phaserBootstrapSource, /ShopScene/);
+  assert.match(phaserBootstrapSource, /BattleScene/);
+  assert.match(phaserBootstrapSource, /OverlayScene/);
+});
+
+test("legacy phaser menu scene files are removed from the runtime source tree", () => {
+  assert.equal(existsSync(new URL("../src/phaser/scenes/TitleScene.js", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/phaser/scenes/ThemeScene.js", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/phaser/scenes/ShopScene.js", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/phaser/scenes/theme-cluster-layout.js", import.meta.url)), false);
+});
+
+test("react menu styling is split into css modules instead of a shared global menu stylesheet", () => {
+  assert.equal(existsSync(new URL("../src/app/menu-shell.css", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/App.module.css", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/components/MenuFrame.module.css", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/components/TitleScreen.module.css", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/components/CampaignScreen.module.css", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/components/ThemeScreen.module.css", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/components/ShopScreen.module.css", import.meta.url)), true);
+});
+
 test("game bootstrap supports battle-only launches and pre-boot registry wiring", () => {
   assert.match(gameMainSource, /const launchPayload = options\.launchPayload \?\? null;/);
   assert.match(gameMainSource, /const session = launchPayload\?\.session \?\? createGameSession\(\);/);
   assert.match(gameMainSource, /const metaProgress = launchPayload\?\.metaProgress \?\? loadMetaProgress\(\);/);
-  assert.match(gameMainSource, /battleOnly:\s*Boolean\(launchPayload\)/);
+  assert.doesNotMatch(gameMainSource, /battleOnly:\s*Boolean\(launchPayload\)/);
   assert.match(gameMainSource, /preBoot\(phaserGame\)/);
   assert.match(gameMainSource, /phaserGame\.registry\.set\("session",\s*session\);/);
   assert.match(gameMainSource, /phaserGame\.registry\.set\("metaProgress",\s*metaProgress\);/);
   assert.match(gameMainSource, /phaserGame\.registry\.set\("uiBridge",\s*\{/);
   assert.match(gameMainSource, /controlsRoot:\s*options\.controlsRoot \?\? null/);
+});
+
+test("phaser ui components keep only battle-overlay helpers after menu scene removal", () => {
+  assert.match(phaserComponentsSource, /export function createHeadingTextStyle/);
+  assert.match(phaserComponentsSource, /export function createBodyTextStyle/);
+  assert.match(phaserComponentsSource, /export function createPanel/);
+  assert.match(phaserComponentsSource, /export function createButton/);
+  assert.doesNotMatch(phaserComponentsSource, /export function createBackdrop/);
+  assert.doesNotMatch(phaserComponentsSource, /export function createTitleLockup/);
+  assert.doesNotMatch(phaserComponentsSource, /export function createCommandButton/);
+  assert.doesNotMatch(phaserComponentsSource, /export function createStatusStrip/);
 });
 
 test("package scripts reflect the current React plus Phaser Vite app", () => {

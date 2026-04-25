@@ -6,6 +6,7 @@ import { createAppState, hydrateAppState, appReducer } from "../src/app/app-stat
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const appStateSource = readFileSync(new URL("../src/app/app-state.js", import.meta.url), "utf8");
 const battleHostSource = readFileSync(new URL("../src/app/BattleHost.jsx", import.meta.url), "utf8");
+const menuFrameSource = readFileSync(new URL("../src/app/components/MenuFrame.jsx", import.meta.url), "utf8");
 const viteConfigSource = readFileSync(new URL("../vite.config.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -63,6 +64,18 @@ test("battle host passes launch payload and exit callbacks into Phaser", () => {
   assert.match(battleHostSource, /launchPayload/);
   assert.match(battleHostSource, /onExitToMenu/);
   assert.match(battleHostSource, /PhaserGame/);
+});
+
+test("menu frame exposes explicit header, container, and footer regions without legacy body/actions props", () => {
+  assert.match(menuFrameSource, /headerContent/);
+  assert.match(menuFrameSource, /containerClassName/);
+  assert.match(menuFrameSource, /footerContent/);
+  assert.match(menuFrameSource, /<header className=/);
+  assert.match(menuFrameSource, /<div className=.*styles\.container/);
+  assert.match(menuFrameSource, /<footer className=/);
+  assert.doesNotMatch(menuFrameSource, /bodyClassName/);
+  assert.doesNotMatch(menuFrameSource, /actionsClassName/);
+  assert.doesNotMatch(menuFrameSource, /\bactions = null\b/);
 });
 
 test("vite enables the React Compiler through the official Babel plugin", () => {

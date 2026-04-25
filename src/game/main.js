@@ -13,7 +13,6 @@ export default function startGame(parent, options = {}) {
   const session = launchPayload?.session ?? createGameSession();
   const metaProgress = launchPayload?.metaProgress ?? loadMetaProgress();
   const game = createGame(mountNode, {
-    battleOnly: Boolean(launchPayload),
     preBoot(phaserGame) {
       phaserGame.registry.set("session", session);
       phaserGame.registry.set("metaProgress", metaProgress);
