@@ -323,3 +323,93 @@
     grid-template-columns: 1fr;
   }
 }
+
+.shop-status {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  background: var(--menu-panel-strong);
+}
+
+.shop-status__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.shop-status__stat {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.shop-status__label,
+.shop-card__category {
+  color: var(--menu-amber);
+  font: 700 0.88rem/1.1 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.shop-status__value,
+.shop-card__level {
+  margin: 0;
+  color: var(--menu-text);
+  font: 700 1.05rem/1.25 "Barlow Condensed", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.shop-status__copy,
+.shop-card__detail {
+  margin: 0;
+  color: var(--menu-text);
+  font: 500 1rem/1.55 "Barlow Condensed", sans-serif;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.shop-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  align-content: start;
+}
+
+.shop-card--global {
+  border-color: rgba(214, 174, 114, 0.42);
+}
+
+.shop-card--tower {
+  border-color: rgba(143, 176, 149, 0.36);
+}
+
+.shop-card--combat {
+  border-color: rgba(137, 167, 207, 0.42);
+}
+
+.shop-card--combat .shop-card__category {
+  color: var(--menu-blue);
+}
+
+.shop-card__title {
+  margin: 0;
+  color: var(--menu-text);
+  font: 700 clamp(1.2rem, 2vw, 1.55rem)/1.05 "Black Ops One", system-ui;
+}
+
+.shop-card__action {
+  justify-self: start;
+  min-width: 108px;
+  margin-top: auto;
+}
+
+@media (max-width: 900px) {
+  .shop-grid,
+  .shop-status__stats {
+    grid-template-columns: 1fr;
+  }
+}

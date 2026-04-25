@@ -28,6 +28,7 @@ import CampaignScreen from "./app/components/CampaignScreen.jsx";
 import ShopScreen from "./app/components/ShopScreen.jsx";
 import ThemeScreen from "./app/components/ThemeScreen.jsx";
 import TitleScreen from "./app/components/TitleScreen.jsx";
+import { purchaseUpgrade } from "./game/meta-shop.js";
 import { loadMetaProgress, saveMetaProgress } from "./game/meta-progress.js";
 import { getStageDefinition } from "./game/stages.js";
 import "./app/menu-shell.css";
@@ -191,10 +192,12 @@ export default function App() {
           data={shopData}
           metaProgress={appState.metaProgress}
           onBack={() => setAppState((current) => returnToTitleScreen(current))}
-          onPurchase={(nextProgress) => {
-            const saved = saveMetaProgress(nextProgress);
-            setAppState((current) => ({ ...current, metaProgress: saved }));
-          }}
+          onPurchase={(upgradeId) =>
+            setAppState((current) => {
+              const nextProgress = purchaseUpgrade(current.metaProgress, upgradeId);
+              const saved = saveMetaProgress(nextProgress);
+              return { ...current, metaProgress: saved };
+            })}
         />
       )}
       {appState.scene === "battle" && (
