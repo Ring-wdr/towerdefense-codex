@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
@@ -6,16 +6,9 @@ import hunterTowerIconUrl from "./assets/towers/hunter-v2.png";
 import magicTowerIconUrl from "./assets/towers/magic-v2.png";
 import slowTowerIconUrl from "./assets/towers/slow-v2.png";
 import {
-  createAppState,
-  hydrateAppState,
-  launchBattle,
-  launchEndless,
-  openCampaign,
-  openShopScreen,
-  openTheme,
-  returnToCampaignScreen,
-  returnFromBattle,
-  returnToTitleScreen,
+  APP_ACTIONS,
+  appReducer,
+  initializeAppState,
 } from "./app/app-state.js";
 import {
   getCampaignScreenData,
@@ -30,7 +23,6 @@ import ThemeScreen from "./app/components/ThemeScreen.jsx";
 import TitleScreen from "./app/components/TitleScreen.jsx";
 import { purchaseUpgrade } from "./game/meta-shop.js";
 import { loadMetaProgress, saveMetaProgress } from "./game/meta-progress.js";
-import { getStageDefinition } from "./game/stages.js";
 import "./app/menu-shell.css";
 
 const BROWSER_SAFE_BOTTOM_VAR = "--browser-safe-bottom";
@@ -71,30 +63,10 @@ function syncBrowserSafeBottomInset() {
   document.documentElement.style.setProperty(BROWSER_SAFE_BOTTOM_VAR, `${safeBottomInset}px`);
 }
 
-function selectCampaignFocus(appState, stageNumber) {
-  const stage = getStageDefinition(stageNumber);
-  const session = {
-    ...appState.session,
-    scene: "campaign",
-    screen: "campaign-menu",
-    selectedTheme: stage.theme,
-    selectedStage: stage.number,
-    activeStage: null,
-  };
-
-  return {
-    ...appState,
-    scene: "campaign",
-    selectedTheme: stage.theme,
-    selectedStage: stage.number,
-    session,
-  };
-}
-
 export default function App() {
   const battleControlsRef = useRef(null);
-  const [appState, setAppState] = useState(() =>
-    hydrateAppState(createAppState().session, loadMetaProgress()),
+  const [appState, dispatch] = useReducer(appReducer, undefined, () =>
+    initializeAppState(loadMetaProgress()),
   );
 
   useEffect(() => {
@@ -132,64 +104,68 @@ export default function App() {
     };
   }, []);
 
-  const titleData = useMemo(
-    () => getTitleScreenData(appState.session, appState.metaProgress),
-    [appState.session, appState.metaProgress],
-  );
-  const campaignData = useMemo(
-    () => getCampaignScreenData(appState.session),
-    [appState.session],
-  );
-  const themeData = useMemo(
-    () => getThemeScreenData(appState.session),
-    [appState.session],
-  );
-  const shopData = useMemo(
-    () => getShopScreenData(appState.metaProgress),
-    [appState.metaProgress],
-  );
+  const titleData = getTitleScreenData(appState.session, appState.metaProgress);
+  const campaignData = getCampaignScreenData(appState.session);
+  const themeData = getThemeScreenData(appState.session);
+  const shopData = getShopScreenData(appState.metaProgress);
 
   return (
     <main className="app-root">
       {appState.scene === "title" && (
         <TitleScreen
           data={titleData}
-          onStartCampaign={() => setAppState((current) => openCampaign(current))}
-          onOpenShop={() => setAppState((current) => openShopScreen(current))}
-          onStartEndless={() => setAppState((current) => launchEndless(current))}
+          onStartCampaign={() => dispatch({ type: APP_ACTIONS.OPEN_CAMPAIGN })}
+          onOpenShop={() => dispatch({ type: APP_ACTIONS.OPEN_SHOP })}
+          onStartEndless={() => dispatch({ type: APP_ACTIONS.LAUNCH_ENDLESS })}
         />
       )}
       {appState.scene === "campaign" && (
         <CampaignScreen
           data={campaignData}
           session={appState.session}
-          onBack={() => setAppState((current) => returnToTitleScreen(current))}
+          onBack={() => dispatch({ type: APP_ACTIONS.RETURN_TITLE })}
           onPreviewTheme={(stageNumber) =>
-            setAppState((current) => selectCampaignFocus(current, stageNumber))}
+            dispatch({
+              type: APP_ACTIONS.FOCUS_CAMPAIGN_STAGE,
+              stageNumber,
+            })
+          }
           onOpenBriefing={(stageNumber) =>
-            setAppState((current) => openTheme(selectCampaignFocus(current, stageNumber), stageNumber))}
+            dispatch({
+              type: APP_ACTIONS.OPEN_THEME,
+              stageNumber,
+            })
+          }
         />
       )}
       {appState.scene === "theme" && (
         <ThemeScreen
           data={themeData}
           session={appState.session}
-          onBack={() => setAppState((current) => returnToCampaignScreen(current))}
-          onSelectStage={(stageNumber) => setAppState((current) => openTheme(current, stageNumber))}
-          onEnterBattle={() => setAppState((current) => launchBattle(current))}
+          onBack={() => dispatch({ type: APP_ACTIONS.RETURN_CAMPAIGN })}
+          onSelectStage={(stageNumber) =>
+            dispatch({
+              type: APP_ACTIONS.OPEN_THEME,
+              stageNumber,
+            })
+          }
+          onEnterBattle={() => dispatch({ type: APP_ACTIONS.LAUNCH_BATTLE })}
         />
       )}
       {appState.scene === "shop" && (
         <ShopScreen
           data={shopData}
           metaProgress={appState.metaProgress}
-          onBack={() => setAppState((current) => returnToTitleScreen(current))}
-          onPurchase={(upgradeId) =>
-            setAppState((current) => {
-              const nextProgress = purchaseUpgrade(current.metaProgress, upgradeId);
-              const saved = saveMetaProgress(nextProgress);
-              return { ...current, metaProgress: saved };
-            })}
+          onBack={() => dispatch({ type: APP_ACTIONS.RETURN_TITLE })}
+          onPurchase={(upgradeId) => {
+            const nextProgress = purchaseUpgrade(appState.metaProgress, upgradeId);
+            const savedMetaProgress = saveMetaProgress(nextProgress);
+
+            dispatch({
+              type: APP_ACTIONS.PURCHASE_COMPLETE,
+              metaProgress: savedMetaProgress,
+            });
+          }}
         />
       )}
       {appState.scene === "battle" && (
@@ -197,8 +173,13 @@ export default function App() {
           launchPayload={appState.battleLaunch}
           controlsRootRef={battleControlsRef}
           onExitToMenu={(session, metaProgress) => {
-            const saved = saveMetaProgress(metaProgress);
-            setAppState((current) => returnFromBattle({ ...current, metaProgress: saved }, session));
+            const savedMetaProgress = saveMetaProgress(metaProgress);
+
+            dispatch({
+              type: APP_ACTIONS.EXIT_BATTLE,
+              session,
+              metaProgress: savedMetaProgress,
+            });
           }}
         />
       )}
@@ -244,7 +225,7 @@ export default function App() {
             <div className="tower-grid tower-grid--dock">
               {renderTowerChoices("dock-")}
             </div>
-            </div>
+          </div>
 
           <div className="dock-actions-layout">
             <div className="dock-pad" aria-label="Move cursor">

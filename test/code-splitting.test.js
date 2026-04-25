@@ -62,6 +62,7 @@ test("package targets React 19 and Phaser 4", () => {
   assert.match(packageJson.dependencies.react, /^\^?19\./);
   assert.match(packageJson.dependencies["react-dom"], /^\^?19\./);
   assert.match(packageJson.dependencies.phaser, /^\^?4\./);
+  assert.match(packageJson.devDependencies["babel-plugin-react-compiler"], /^\^/);
 });
 
 test("phaser source files use namespace imports for Phaser 4 ESM", () => {
@@ -73,8 +74,9 @@ test("phaser source files use namespace imports for Phaser 4 ESM", () => {
   }
 });
 
-test("vite config includes the React plugin and relative base path", () => {
+test("vite config includes the React plugin, compiler, and relative base path", () => {
   assert.match(viteConfigSource, /defineConfig/);
-  assert.match(viteConfigSource, /react\(\)/);
+  assert.match(viteConfigSource, /react\(\s*\{/);
+  assert.match(viteConfigSource, /babel-plugin-react-compiler/);
   assert.match(viteConfigSource, /base:\s*["']\.\/["']/);
 });

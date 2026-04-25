@@ -290,7 +290,7 @@ test("react title and campaign screens preserve the main menu actions", () => {
 test("title screen exposes endless mode only through campaign-clear meta progress", () => {
   assert.match(screenDataSource, /highestClearedStage\s*>=\s*getStageCount\(\)/);
   assert.match(titleScreenSource, /Endless Mode/);
-  assert.match(appSource, /launchEndless/);
+  assert.match(appSource, /APP_ACTIONS\.LAUNCH_ENDLESS/);
 });
 
 test("app shell guards against iOS double-tap zoom and viewport inset shifts", () => {
