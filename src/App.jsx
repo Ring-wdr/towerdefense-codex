@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, createIcons } from "lucide";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
 import hunterTowerIconUrl from "./assets/towers/hunter-v2.png";
@@ -42,10 +42,10 @@ const TOWER_CHOICES = [
   { type: "hunter", key: "5", name: "Hunter", iconUrl: hunterTowerIconUrl },
 ];
 const MOVE_BUTTONS = [
-  { move: "up", icon: "arrow-up", label: "Up", className: "dock-pad__up" },
-  { move: "left", icon: "arrow-left", label: "Left", className: "dock-pad__left" },
-  { move: "right", icon: "arrow-right", label: "Right", className: "dock-pad__right" },
-  { move: "down", icon: "arrow-down", label: "Down", className: "dock-pad__down" },
+  { move: "up", Icon: ArrowUp, label: "Up", className: "dock-pad__up" },
+  { move: "left", Icon: ArrowLeft, label: "Left", className: "dock-pad__left" },
+  { move: "right", Icon: ArrowRight, label: "Right", className: "dock-pad__right" },
+  { move: "down", Icon: ArrowDown, label: "Down", className: "dock-pad__down" },
 ];
 
 function renderTowerChoices(keyPrefix = "") {
@@ -98,15 +98,6 @@ export default function App() {
   );
 
   useEffect(() => {
-    createIcons({
-      icons: {
-        ArrowUp,
-        ArrowLeft,
-        ArrowRight,
-        ArrowDown,
-      },
-    });
-
     syncBrowserSafeBottomInset();
 
     const sync = () => {
@@ -253,13 +244,13 @@ export default function App() {
             <div className="tower-grid tower-grid--dock">
               {renderTowerChoices("dock-")}
             </div>
-          </div>
+            </div>
 
           <div className="dock-actions-layout">
             <div className="dock-pad" aria-label="Move cursor">
-              {MOVE_BUTTONS.map(({ move, icon, label, className }) => (
+              {MOVE_BUTTONS.map(({ move, Icon, label, className }) => (
                 <button key={move} type="button" data-move={move} className={className} aria-label={label}>
-                  <i data-lucide={icon} aria-hidden="true"></i>
+                  <Icon aria-hidden="true" size={18} strokeWidth={2.4} />
                   <span className="sr-only">{label}</span>
                 </button>
               ))}

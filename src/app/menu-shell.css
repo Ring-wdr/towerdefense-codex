@@ -25,6 +25,8 @@
 
 .menu-frame {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   padding: 28px 22px 132px;
   color: var(--menu-text);
@@ -50,15 +52,27 @@
 
 .menu-frame__body {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 20px;
   margin-top: 28px;
 }
 
 .menu-frame__actions {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
+}
+
+.menu-frame--title-screen .menu-frame__body {
+  align-content: center;
+}
+
+.menu-frame--title-screen .menu-frame__actions {
+  margin-top: auto;
+  padding-top: 28px;
 }
 
 .menu-frame__kicker {
@@ -366,10 +380,29 @@
   font: 500 1rem/1.55 "Barlow Condensed", sans-serif;
 }
 
+.menu-frame--shop-screen {
+  height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .menu-frame--shop-screen {
+    height: 100dvh;
+  }
+}
+
+.menu-frame--shop-screen .menu-frame__body {
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 8px;
+  align-content: start;
 }
 
 .shop-card {

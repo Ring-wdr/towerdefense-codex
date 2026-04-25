@@ -254,8 +254,8 @@ test("app shell keeps battle controls hidden outside battle and exposes React me
 
 test("react entry mounts the app shell and app source hydrates tower icon markup", () => {
   assert.match(mainEntrypointSource, /ReactDOM\.createRoot\(document\.getElementById\("root"\)\)\.render\(<App \/>\);/);
-  assert.match(appSource, /createIcons/);
-  assert.match(appSource, /icons:\s*\{/);
+  assert.match(appSource, /from "lucide-react"/);
+  assert.doesNotMatch(appSource, /createIcons/);
   assert.match(appSource, /visualViewport/);
   assert.match(appSource, /--browser-safe-bottom/);
   assert.match(appSource, /data-tower-icon/);
@@ -483,10 +483,12 @@ test("shop screen preserves top-level progression stats above the upgrade grid",
 
 test("quick play movement buttons render lucide arrow icons", () => {
   assert.match(appSource, /MOVE_BUTTONS = \[/);
-  assert.match(appSource, /\{\s*move: "up",\s*icon: "arrow-up"/);
-  assert.match(appSource, /\{\s*move: "left",\s*icon: "arrow-left"/);
-  assert.match(appSource, /\{\s*move: "right",\s*icon: "arrow-right"/);
-  assert.match(appSource, /\{\s*move: "down",\s*icon: "arrow-down"/);
+  assert.match(appSource, /\{\s*move: "up",\s*Icon: ArrowUp/);
+  assert.match(appSource, /\{\s*move: "left",\s*Icon: ArrowLeft/);
+  assert.match(appSource, /\{\s*move: "right",\s*Icon: ArrowRight/);
+  assert.match(appSource, /\{\s*move: "down",\s*Icon: ArrowDown/);
+  assert.match(appSource, /<Icon aria-hidden="true"/);
+  assert.doesNotMatch(appSource, /data-lucide=/);
 });
 
 test("battle scene keeps the hud compact and biases the field upward", () => {

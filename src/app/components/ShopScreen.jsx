@@ -17,6 +17,7 @@ export default function ShopScreen({ data, metaProgress, onBack, onPurchase }) {
       kicker="Meta Shop"
       title="Field Arsenal"
       tone="amber"
+      className="menu-frame--shop-screen"
       actions={(
         <button className="menu-button" type="button" onClick={onBack}>
           Back

@@ -6,6 +6,7 @@ export default function TitleScreen({ data, onStartCampaign, onOpenShop, onStart
       kicker="Campaign Front"
       title="Stage Command"
       tone="olive"
+      className="menu-frame--title-screen"
       actions={
         <>
           <button className="menu-button" type="button" onClick={onStartCampaign}>
