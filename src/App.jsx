@@ -29,6 +29,7 @@ import ShopScreen from "./app/components/ShopScreen.jsx";
 import ThemeScreen from "./app/components/ThemeScreen.jsx";
 import TitleScreen from "./app/components/TitleScreen.jsx";
 import { loadMetaProgress, saveMetaProgress } from "./game/meta-progress.js";
+import { getStageDefinition } from "./game/stages.js";
 import "./app/menu-shell.css";
 
 const BROWSER_SAFE_BOTTOM_VAR = "--browser-safe-bottom";
@@ -67,6 +68,26 @@ function syncBrowserSafeBottomInset() {
     : 0;
 
   document.documentElement.style.setProperty(BROWSER_SAFE_BOTTOM_VAR, `${safeBottomInset}px`);
+}
+
+function selectCampaignFocus(appState, stageNumber) {
+  const stage = getStageDefinition(stageNumber);
+  const session = {
+    ...appState.session,
+    scene: "campaign",
+    screen: "campaign-menu",
+    selectedTheme: stage.theme,
+    selectedStage: stage.number,
+    activeStage: null,
+  };
+
+  return {
+    ...appState,
+    scene: "campaign",
+    selectedTheme: stage.theme,
+    selectedStage: stage.number,
+    session,
+  };
 }
 
 export default function App() {
@@ -150,12 +171,16 @@ export default function App() {
           data={campaignData}
           session={appState.session}
           onBack={() => setAppState((current) => returnToTitleScreen(current))}
-          onSelectStage={(stageNumber) => setAppState((current) => openTheme(current, stageNumber))}
+          onPreviewTheme={(stageNumber) =>
+            setAppState((current) => selectCampaignFocus(current, stageNumber))}
+          onOpenBriefing={(stageNumber) =>
+            setAppState((current) => openTheme(selectCampaignFocus(current, stageNumber), stageNumber))}
         />
       )}
       {appState.scene === "theme" && (
         <ThemeScreen
           data={themeData}
+          session={appState.session}
           onBack={() => setAppState((current) => returnToCampaignScreen(current))}
           onSelectStage={(stageNumber) => setAppState((current) => openTheme(current, stageNumber))}
           onEnterBattle={() => setAppState((current) => launchBattle(current))}
