@@ -12,9 +12,12 @@
 ## Tech Stack
 
 - Vite
+- React
 - Vanilla JavaScript
+- Phaser 4
 - HTML / CSS
 - Node.js test runner
+- Playwright CLI
 
 ## Local Development
 
@@ -24,6 +27,9 @@ npm run dev
 ```
 
 개발 서버가 뜨면 브라우저에서 표시된 로컬 주소로 접속하면 됩니다.
+
+React가 타이틀, 캠페인, 테마, 상점 화면과 바깥 앱 셸, DOM 전투 컨트롤을 소유합니다.
+Phaser는 `#game-root` 내부에서 battle과 battle-only overlay 흐름만 담당합니다.
 
 ## Scripts
 

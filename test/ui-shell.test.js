@@ -3,15 +3,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const mainSource = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
+const mainEntrypointSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
+const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+const screenDataSource = readFileSync(new URL("../src/app/screen-data.js", import.meta.url), "utf8");
 const gameMainSource = readFileSync(new URL("../src/game/main.js", import.meta.url), "utf8");
 const phaserGameSource = readFileSync(new URL("../src/phaser/game.js", import.meta.url), "utf8");
 const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene.js", import.meta.url), "utf8");
-const campaignSceneSource = readFileSync(new URL("../src/phaser/scenes/CampaignScene.js", import.meta.url), "utf8");
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
-const shopSceneSource = readFileSync(new URL("../src/phaser/scenes/ShopScene.js", import.meta.url), "utf8");
-const themeSceneSource = readFileSync(new URL("../src/phaser/scenes/ThemeScene.js", import.meta.url), "utf8");
-const titleSceneSource = readFileSync(new URL("../src/phaser/scenes/TitleScene.js", import.meta.url), "utf8");
+const titleScreenSource = readFileSync(new URL("../src/app/components/TitleScreen.jsx", import.meta.url), "utf8");
+const campaignScreenSource = readFileSync(new URL("../src/app/components/CampaignScreen.jsx", import.meta.url), "utf8");
+const themeScreenSource = readFileSync(new URL("../src/app/components/ThemeScreen.jsx", import.meta.url), "utf8");
+const shopScreenSource = readFileSync(new URL("../src/app/components/ShopScreen.jsx", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 function extractMethodBody(source, methodName) {
@@ -226,76 +228,84 @@ function collectTextUpdateValues(source) {
   return values;
 }
 
-test("ui shell exposes only the phaser mount and battle controls", () => {
-  assert.match(html, /id="game-root"/);
-  assert.match(html, /id="battle-controls"/);
-  assert.match(html, /id="start-button"/);
-  assert.match(html, /id="pause-button"/);
-  assert.match(html, /id="tower-buttons"/);
-  assert.match(html, /id="tower-buttons-dock"/);
+test("html bootstraps the React shell and keeps battle controls inside App", () => {
+  assert.match(html, /id="root"/);
+  assert.match(html, /src="\/src\/main\.jsx"/);
   assert.match(html, /viewport-fit=cover/);
+  assert.doesNotMatch(html, /id="game-root"/);
+  assert.doesNotMatch(html, /id="battle-controls"/);
 
-  assert.doesNotMatch(html, /id="title-screen"/);
-  assert.doesNotMatch(html, /id="campaign-menu-screen"/);
-  assert.doesNotMatch(html, /id="theme-screen"/);
-  assert.doesNotMatch(html, /id="stage-detail-card"/);
+  assert.match(appSource, /id="battle-controls"/);
+  assert.match(appSource, /id="start-button"/);
+  assert.match(appSource, /id="pause-button"/);
+  assert.match(appSource, /id="tower-buttons"/);
+  assert.match(appSource, /id="tower-buttons-dock"/);
 });
 
-test("battle controls hydrate tower icon images from imported assets", () => {
-  assert.match(mainSource, /DOMContentLoaded/);
-  assert.match(mainSource, /import\("\.\/game\/main\.js"\)/);
-  assert.match(mainSource, /createIcons/);
-  assert.match(mainSource, /icons:\s*\{/);
-  assert.match(mainSource, /visualViewport/);
-  assert.match(mainSource, /--browser-safe-bottom/);
-  assert.match(mainSource, /data-tower-icon/);
-  assert.match(mainSource, /querySelectorAll\("\[data-tower-icon\]"\)/);
-  assert.match(mainSource, /img\.src\s*=/);
+test("app shell keeps battle controls hidden outside battle and exposes React menu screens", () => {
+  assert.match(appSource, /TitleScreen/);
+  assert.match(appSource, /CampaignScreen/);
+  assert.match(appSource, /ThemeScreen/);
+  assert.match(appSource, /ShopScreen/);
+  assert.match(appSource, /BattleHost/);
+  assert.match(appSource, /appState\.scene === "battle"/);
+  assert.match(appSource, /<section id="battle-controls"[\s\S]*hidden/);
+});
+
+test("react entry mounts the app shell and app source hydrates tower icon markup", () => {
+  assert.match(mainEntrypointSource, /ReactDOM\.createRoot\(document\.getElementById\("root"\)\)\.render\(<App \/>\);/);
+  assert.match(appSource, /from "lucide-react"/);
+  assert.doesNotMatch(appSource, /createIcons/);
+  assert.match(appSource, /visualViewport/);
+  assert.match(appSource, /--browser-safe-bottom/);
+  assert.match(appSource, /data-tower-icon/);
+  assert.match(appSource, /src=\{iconUrl\}/);
   assert.match(gameMainSource, /createGameSession/);
   assert.match(gameMainSource, /loadMetaProgress/);
-  assert.match(gameMainSource, /createGame\(mountNode\)/);
-  assert.match(gameMainSource, /game\.registry\.set\("session",\s*createGameSession\(\)\);/);
-  assert.match(gameMainSource, /game\.registry\.set\("metaProgress",\s*loadMetaProgress\(\)\);/);
+  assert.match(gameMainSource, /createGame\(mountNode,\s*\{/);
+  assert.match(gameMainSource, /battleOnly:\s*Boolean\(launchPayload\)/);
+  assert.match(gameMainSource, /phaserGame\.registry\.set\("session",\s*session\);/);
+  assert.match(gameMainSource, /phaserGame\.registry\.set\("metaProgress",\s*metaProgress\);/);
 });
 
-test("phaser game registers the new ShopScene", () => {
+test("phaser bootstrap supports a battle-only scene list while keeping legacy scenes available off-path", () => {
+  assert.match(phaserGameSource, /import\s+\{\s*TitleScene\s*\}\s+from "\.\/scenes\/TitleScene\.js";/);
   assert.match(phaserGameSource, /import\s+\{\s*ShopScene\s*\}\s+from "\.\/scenes\/ShopScene\.js";/);
-  assert.match(phaserGameSource, /scene:\s*\[TitleScene,\s*CampaignScene,\s*ThemeScene,\s*ShopScene,\s*BattleScene,\s*OverlayScene\]/);
+  assert.match(phaserGameSource, /const battleOnly = options\.battleOnly === true;/);
+  assert.match(phaserGameSource, /scene:\s*battleOnly\s*\?\s*\[BattleScene,\s*OverlayScene\]/);
+  assert.match(phaserGameSource, /:\s*\[TitleScene,\s*CampaignScene,\s*ThemeScene,\s*ShopScene,\s*BattleScene,\s*OverlayScene\]/);
 });
 
-test("title and campaign scenes expose the shop and title back buttons in source", () => {
-  assert.match(titleSceneSource, /"Shop"/);
-  assert.match(titleSceneSource, /openShop\(getSession\(this\)\)/);
-  assert.match(titleSceneSource, /this\.scene\.start\("ShopScene"\)/);
+test("react title and campaign screens preserve the main menu actions", () => {
+  assert.match(titleScreenSource, />\s*Shop\s*</);
+  assert.match(titleScreenSource, /onOpenShop/);
+  assert.match(titleScreenSource, />\s*Start Campaign\s*</);
 
-  assert.match(campaignSceneSource, /"Back"/);
-  assert.match(campaignSceneSource, /returnToTitle\(getSession\(this\)\)/);
-  assert.match(campaignSceneSource, /this\.scene\.start\("TitleScene"\)/);
+  assert.match(campaignScreenSource, />\s*Back\s*</);
+  assert.match(campaignScreenSource, />\s*Briefing\s*</);
+  assert.match(campaignScreenSource, /onPreviewTheme/);
+  assert.match(campaignScreenSource, /onOpenBriefing/);
 });
 
-test("title scene exposes endless mode only through campaign-clear meta progress", () => {
-  assert.match(titleSceneSource, /beginEndlessBattle/);
-  assert.match(titleSceneSource, /getStageCount/);
-  assert.match(titleSceneSource, /loadMetaProgress/);
-  assert.match(titleSceneSource, /highestClearedStage\s*>=\s*getStageCount\(\)/);
-  assert.match(titleSceneSource, /"Endless Mode"/);
-  assert.match(titleSceneSource, /const commandStackTop = Math\.min\(layout\.command\.top,\s*layout\.command\.bottom - commandStackHeight\);/);
-  assert.match(titleSceneSource, /beginEndlessBattle\(getSession\(this\),\s*metaProgress\)/);
-  assert.match(titleSceneSource, /this\.scene\.start\("BattleScene"/);
+test("title screen exposes endless mode only through campaign-clear meta progress", () => {
+  assert.match(screenDataSource, /highestClearedStage\s*>=\s*getStageCount\(\)/);
+  assert.match(titleScreenSource, /Endless Mode/);
+  assert.match(appSource, /launchEndless/);
 });
 
-test("main entry guards against iOS double-tap zoom in the app shell", () => {
-  assert.match(mainSource, /addEventListener\("touchend"/);
-  assert.match(mainSource, /passive:\s*false/);
-  assert.match(mainSource, /event\.preventDefault\(\)/);
-  assert.match(mainSource, /Date\.now\(\)/);
+test("app shell guards against iOS double-tap zoom and viewport inset shifts", () => {
+  assert.match(appSource, /addEventListener\("touchend"/);
+  assert.match(appSource, /passive:\s*false/);
+  assert.match(appSource, /event\.preventDefault\(\)/);
+  assert.match(appSource, /Date\.now\(\)/);
+  assert.match(appSource, /window\.visualViewport\?\.addEventListener\("resize",\s*sync\)/);
 });
 
 test("battle scene opens on a ready state and exposes a start button for entry and breaks", () => {
   const createBody = extractMethodBody(battleSceneSource, "create");
 
   assert.ok(createBody);
-  assert.match(html, /id="start-button"[^>]*>Start<\/button>/);
+  assert.match(appSource, /id="start-button"[\s\S]*Start/);
   assert.match(createBody, /const metaProgress = this\.game\.registry\.get\("metaProgress"\);/);
   assert.match(createBody, /this\.state\s*=\s*createInitialState\(stage,\s*metaProgress,\s*\{\s*mode\s*\}\);/);
   assert.doesNotMatch(battleSceneSource, /this\.state\s*=\s*startGame\(createInitialState\(stage\)\);/);
@@ -319,11 +329,13 @@ test("battle scene restart preserves permanent progression when rebuilding state
   assert.match(restartBattleBody, /this\.renderScene\(\);/);
 });
 
-test("battle scene persists stage clear rewards through storage before session completion", () => {
+test("battle scene persists stage clear rewards and returns control through the React bridge", () => {
   const persistStageClearRewardsBody = extractMethodBody(battleSceneSource, "persistStageClearRewards");
+  const exitToMenuBody = extractMethodBody(battleSceneSource, "exitToMenu");
   const handleStatusTransitionBody = extractMethodBody(battleSceneSource, "handleStatusTransition");
 
   assert.ok(persistStageClearRewardsBody);
+  assert.ok(exitToMenuBody);
   assert.ok(handleStatusTransitionBody);
   assert.match(battleSceneSource, /awardStageClearRewards/);
   assert.match(battleSceneSource, /saveMetaProgress/);
@@ -332,13 +344,16 @@ test("battle scene persists stage clear rewards through storage before session c
   assert.match(persistStageClearRewardsBody, /awardStageClearRewards\(metaProgress,\s*stageNumber\)/);
   assert.match(persistStageClearRewardsBody, /saveMetaProgress\(nextMetaProgress\)/);
   assert.match(persistStageClearRewardsBody, /this\.game\.registry\.set\("metaProgress",\s*savedProgress\)/);
+  assert.match(exitToMenuBody, /const bridge = getUiBridge\(this\);/);
+  assert.match(exitToMenuBody, /this\.game\.registry\.set\("session",\s*nextSession\);/);
+  assert.match(exitToMenuBody, /bridge\.onExitToMenu\(nextSession,\s*metaProgress\);/);
   assert.match(
     handleStatusTransitionBody,
     /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*const completedStage = getCompletedBattleStage\(session,\s*this\.state\);[\s\S]*this\.persistStageClearRewards\(completedStage\);[\s\S]*completeBattleStage/,
   );
   assert.match(
     handleStatusTransitionBody,
-    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*this\.game\.registry\.set\("session",\s*progressedSession\);[\s\S]*this\.setBattleControlsVisible\(false\);[\s\S]*this\.scene\.start\("ThemeScene"\);/,
+    /if \(this\.state\.status === "stage-cleared"\) \{[\s\S]*const progressedSession = completeBattleStage\(session,\s*completedStage\);[\s\S]*this\.exitToMenu\(progressedSession\);/,
   );
   assert.doesNotMatch(
     handleStatusTransitionBody,
@@ -399,10 +414,10 @@ test("battle scene imports tower stat lookup for range overlays", () => {
 });
 
 test("tower actions use readable labels and the battle scene is ready for contextual labels", () => {
-  assert.match(html, /id="upgrade-action"[^>]*>Upgrade<\/button>/);
-  assert.match(html, /id="delete-action"[^>]*>Delete<\/button>/);
-  assert.match(html, /<h2>Tower Bay<\/h2>/);
-  assert.match(html, /<p class="dock-label">Select Tower<\/p>/);
+  assert.match(appSource, /id="upgrade-action"[\s\S]*Upgrade/);
+  assert.match(appSource, /id="delete-action"[\s\S]*Delete/);
+  assert.match(appSource, /<h2>Tower Bay<\/h2>/);
+  assert.match(appSource, /<p className="dock-label">Select Tower<\/p>/);
 
   const syncTowerActionOverlayBody = extractMethodBody(battleSceneSource, "syncTowerActionOverlay");
   assert.ok(syncTowerActionOverlayBody);
@@ -417,18 +432,15 @@ test("scene and overlay copy use the refreshed briefing voice", () => {
   assert.match(battleSceneSource, /Cannot deploy here/);
   assert.doesNotMatch(battleSceneSource, /Tile unavailable for the selected tower/);
 
-  assert.doesNotMatch(titleSceneSource, /전선을 훑고 진입할 전구를 고른다\./);
-  assert.doesNotMatch(titleSceneSource, /브리핑이 끝나면 전투를 개시한다\./);
-  assert.match(titleSceneSource, /단일 캠페인 루트\. 각 전선은 순차적으로 개방된다\./);
+  assert.match(screenDataSource, /단일 캠페인 루트\. 각 전선은 순차적으로 개방된다\./);
+  assert.match(campaignScreenSource, /Campaign Map/);
+  assert.match(campaignScreenSource, /Briefing/);
 
-  assert.doesNotMatch(campaignSceneSource, /전구를 전환해 현재 전선을 확인한 뒤 브리핑으로 진입한다\./);
-  assert.doesNotMatch(campaignSceneSource, /Rotate the campaign theater, confirm the current sector, then push forward into the briefing screen\./);
-
-  assert.match(themeSceneSource, /\$\{stage\.theme\} 전선/);
-  assert.match(themeSceneSource, /ENTRY LOCKED/);
-  assert.match(themeSceneSource, /이 구간은 아직 봉쇄 상태다\. 캠페인에서 앞선 전장을 먼저 확보해야 한다\./);
-  assert.doesNotMatch(themeSceneSource, /LOCKED APPROACH/);
-  assert.doesNotMatch(themeSceneSource, /\$\{stage\.theme\.toUpperCase\(\)\} FRONT/);
+  assert.match(themeScreenSource, /\$\{stage\.theme\} 전선/);
+  assert.match(themeScreenSource, /ENTRY LOCKED/);
+  assert.match(themeScreenSource, /이 구간은 아직 봉쇄 상태다\. 캠페인에서 앞선 전장을 먼저 확보해야 한다\./);
+  assert.doesNotMatch(themeScreenSource, /LOCKED APPROACH/);
+  assert.doesNotMatch(themeScreenSource, /\$\{stage\.theme\.toUpperCase\(\)\} FRONT/);
 
   assert.match(overlaySceneSource, /Stage \$\{stage\} 교전이 중지됐다\. 전투를 재개하거나 재정비 후 복귀할 수 있다\./);
   assert.match(overlaySceneSource, /Stage \$\{stage\} 방어선이 무너졌다\. 같은 구간을 다시 시도하거나 브리핑으로 복귀한다\./);
@@ -449,58 +461,34 @@ test("draft overlay separates summary, description, and action rows on compact c
   assert.doesNotMatch(renderDraftOverlayBody, /y \+ 54,\s*choice\.description[\s\S]*y \+ cardHeight - \(frame\.isMobile \? 52 : 62\),\s*choice\.summary/);
 });
 
-test("shop scene renders combat unlock cards with a dedicated category style", () => {
-  assert.match(shopSceneSource, /combat/);
+test("shop screen renders combat unlock cards with a dedicated category style", () => {
+  assert.match(shopScreenSource, /SHOP_CARD_STYLE_TOKENS/);
+  assert.match(shopScreenSource, /combat:\s*"combat"/);
+  assert.match(shopScreenSource, /shop-card--\$\{styleToken\}/);
 });
 
-test("campaign scene adds a compact hero tier for mid-width layouts", () => {
-  const heroSection = campaignSceneSource.match(/function createThemeHeroCard[\s\S]*?return container;\r?\n\}/)?.[0] ?? "";
-
-  assert.match(campaignSceneSource, /const headerTitle = "";/);
-  assert.match(campaignSceneSource, /const titleLockup = createTitleLockup\(/);
-  assert.match(campaignSceneSource, /"CAMPAIGN MAP",\s*headerTitle,/);
-  assert.match(campaignSceneSource, /const isCompactCampaignLayout = layout\.width <= COMPACT_CAMPAIGN_BREAKPOINT;/);
-  assert.match(campaignSceneSource, /compact:\s*isCompactCampaignLayout/);
-  assert.match(campaignSceneSource, /const chipY = titleLockup\.kickerText\.y \+ titleLockup\.kickerText\.height \+ 20;/);
-  assert.match(heroSection, /const descriptionText = config\.layout\.isMobile \? \(config\.mobileDescription \?\? config\.description\) : config\.description;/);
-  assert.match(heroSection, /const showBackgroundLogo = true;/);
-  assert.match(heroSection, /const actionButtonWidth = isCompact \? config\.width - 48 : config\.layout\.isMobile \? 132 : 152;/);
-  assert.match(heroSection, /const desktopActionLaneWidth = usesDesktopActionLane \? 228 : 0;/);
-  assert.match(heroSection, /const actionButtonY = cardHeight - actionButtonHeight - 24;/);
-  assert.match(heroSection, /const textBlockBottom = actionButtonY - \(config\.layout\.isMobile \? 16 : 18\);/);
-  assert.match(heroSection, /title\.setY\(titleY\);/);
-  assert.match(heroSection, /const backgroundLogoWidth = config\.width \* 0\.5;/);
-  assert.match(heroSection, /const backgroundLogoHeight = cardHeight \* 0\.5;/);
-  assert.match(heroSection, /const backgroundLogoX = config\.width \/ 2;/);
-  assert.match(heroSection, /const backgroundLogoY = cardHeight \/ 2;/);
-  assert.match(heroSection, /const backgroundLogo = showBackgroundLogo/);
-  assert.match(heroSection, /getThemeSigilKey\(config\.theme\)/);
-  assert.match(heroSection, /const backgroundLogoScale = Math\.min\(backgroundLogoWidth \/ backgroundLogo\.width,\s*backgroundLogoHeight \/ backgroundLogo\.height\);/);
-  assert.match(heroSection, /backgroundLogo\.setScale\(backgroundLogoScale\)/);
-  assert.doesNotMatch(heroSection, /backgroundLogo\.setDisplaySize\(/);
-  assert.match(heroSection, /backgroundLogo\.setTint\(style\.accent\)/);
-  assert.match(heroSection, /const backgroundLogoMaskShape = showBackgroundLogo \? scene\.make\.graphics\(\{ x: config\.x, y: config\.y, add: false \}\) : null;/);
-  assert.match(heroSection, /const backgroundLogoMask = backgroundLogoMaskShape \? backgroundLogoMaskShape\.createGeometryMask\(\) : null;/);
-  assert.match(heroSection, /backgroundLogo\.setMask\(backgroundLogoMask\)/);
-  assert.match(heroSection, /const backgroundShade = showBackgroundLogo \? scene\.add\.graphics\(\) : null;/);
-  assert.doesNotMatch(heroSection, /backgroundShade\.fillCircle\(/);
-  assert.doesNotMatch(heroSection, /backgroundShade\.fillStyle\(style\.glow,\s*0\.12\);/);
-  assert.match(heroSection, /const backgroundFooterFade = showBackgroundLogo \? scene\.add\.graphics\(\) : null;/);
-  assert.match(heroSection, /backgroundFooterFade\.fillGradientStyle\(/);
-  assert.match(heroSection, /container\.add\(\[\s*panel,\s*\.\.\.\(backgroundLogo \? \[backgroundLogo\] : \[\]\),\s*\.\.\.\(backgroundShade \? \[backgroundShade\] : \[\]\),\s*\.\.\.\(backgroundFooterFade \? \[backgroundFooterFade\] : \[\]\),/);
+test("campaign screen keeps preview selection separate from the briefing action", () => {
+  assert.match(campaignScreenSource, /onPreviewTheme/);
+  assert.match(campaignScreenSource, /onOpenBriefing/);
+  assert.match(campaignScreenSource, /campaign-hero__action/);
+  assert.match(campaignScreenSource, /Campaign themes/);
 });
 
-test("shop scene offsets helper copy below the status strips before laying out the grid", () => {
-  assert.match(shopSceneSource, /const helperTextY = stripY \+ \(layout\.isMobile \? 52 : 60\);/);
-  assert.match(shopSceneSource, /const gridTop = helperTextY \+ \(layout\.isMobile \? 34 : 40\);/);
-  assert.match(shopSceneSource, /wordWrap: \{ width: layout\.contentWidth - \(layout\.isMobile \? 24 : 220\) \}/);
+test("shop screen preserves top-level progression stats above the upgrade grid", () => {
+  assert.match(shopScreenSource, /shop-status__stats/);
+  assert.match(shopScreenSource, /Currency/);
+  assert.match(shopScreenSource, /Cleared/);
+  assert.match(shopScreenSource, /aria-label="Meta shop upgrades"/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {
-  assert.match(html, /data-move="up"[\s\S]*data-lucide="arrow-up"/);
-  assert.match(html, /data-move="left"[\s\S]*data-lucide="arrow-left"/);
-  assert.match(html, /data-move="right"[\s\S]*data-lucide="arrow-right"/);
-  assert.match(html, /data-move="down"[\s\S]*data-lucide="arrow-down"/);
+  assert.match(appSource, /MOVE_BUTTONS = \[/);
+  assert.match(appSource, /\{\s*move: "up",\s*Icon: ArrowUp/);
+  assert.match(appSource, /\{\s*move: "left",\s*Icon: ArrowLeft/);
+  assert.match(appSource, /\{\s*move: "right",\s*Icon: ArrowRight/);
+  assert.match(appSource, /\{\s*move: "down",\s*Icon: ArrowDown/);
+  assert.match(appSource, /<Icon aria-hidden="true"/);
+  assert.doesNotMatch(appSource, /data-lucide=/);
 });
 
 test("battle scene keeps the hud compact and biases the field upward", () => {

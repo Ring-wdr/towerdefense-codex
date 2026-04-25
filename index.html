@@ -10,111 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Black+Ops+One&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="app-root">
-      <div id="game-root" class="game-root" aria-label="Tower defense game"></div>
-
-      <section id="battle-controls" class="battle-controls" hidden>
-        <button id="start-button" class="board-pause-button board-start-button" type="button">Start</button>
-        <button id="pause-button" class="board-pause-button" type="button">Pause</button>
-
-        <div id="tower-actions" class="tower-actions" hidden>
-          <button id="upgrade-action" type="button" aria-label="Upgrade tower">Upgrade</button>
-          <button id="delete-action" type="button" aria-label="Delete tower">Delete</button>
-        </div>
-
-        <aside class="sidebar" hidden>
-          <section class="card card--towers">
-            <h2>Tower Bay</h2>
-            <p class="selection-summary selection-summary--desktop" data-selection-summary></p>
-            <div class="tower-grid" id="tower-buttons">
-              <button type="button" data-tower="attack" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span class="tower-choice__name">Attack</span></span>
-              </button>
-              <button type="button" data-tower="slow" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span class="tower-choice__name">Slow</span></span>
-              </button>
-              <button type="button" data-tower="magic" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span class="tower-choice__name">Magic</span></span>
-              </button>
-              <button type="button" data-tower="cannon" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span class="tower-choice__name">Cannon</span></span>
-              </button>
-              <button type="button" data-tower="hunter" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span class="tower-choice__name">Hunter</span></span>
-              </button>
-            </div>
-          </section>
-        </aside>
-
-        <section id="tower-buttons-dock" class="control-dock control-dock--hybrid" aria-label="Quick play controls" hidden>
-          <div class="dock-section">
-            <div class="dock-header">
-              <p class="dock-label">Select Tower</p>
-              <p class="dock-selection-summary" data-selection-summary></p>
-            </div>
-            <div class="tower-grid tower-grid--dock">
-              <button type="button" data-tower="attack" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="attack" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">1</span><span class="tower-choice__name">Attack</span></span>
-              </button>
-              <button type="button" data-tower="slow" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="slow" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">2</span><span class="tower-choice__name">Slow</span></span>
-              </button>
-              <button type="button" data-tower="magic" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="magic" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">3</span><span class="tower-choice__name">Magic</span></span>
-              </button>
-              <button type="button" data-tower="cannon" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="cannon" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">4</span><span class="tower-choice__name">Cannon</span></span>
-              </button>
-              <button type="button" data-tower="hunter" class="tower-choice">
-                <span class="tower-choice__icon"><img data-tower-icon="hunter" alt="" /></span>
-                <span class="tower-choice__meta"><span class="tower-choice__key">5</span><span class="tower-choice__name">Hunter</span></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="dock-actions-layout">
-            <div class="dock-pad" aria-label="Move cursor">
-              <button type="button" data-move="up" class="dock-pad__up" aria-label="Up">
-                <i data-lucide="arrow-up" aria-hidden="true"></i>
-                <span class="sr-only">Up</span>
-              </button>
-              <button type="button" data-move="left" class="dock-pad__left" aria-label="Left">
-                <i data-lucide="arrow-left" aria-hidden="true"></i>
-                <span class="sr-only">Left</span>
-              </button>
-              <button type="button" data-move="right" class="dock-pad__right" aria-label="Right">
-                <i data-lucide="arrow-right" aria-hidden="true"></i>
-                <span class="sr-only">Right</span>
-              </button>
-              <button type="button" data-move="down" class="dock-pad__down" aria-label="Down">
-                <i data-lucide="arrow-down" aria-hidden="true"></i>
-                <span class="sr-only">Down</span>
-              </button>
-            </div>
-
-            <div class="dock-actions">
-              <button type="button" data-action="build">Build</button>
-              <button type="button" data-action="upgrade">Upgrade</button>
-              <button type="button" data-action="pause">Pause</button>
-              <button type="button" data-action="restart">Restart</button>
-            </div>
-          </div>
-        </section>
-      </section>
-    </main>
-
-    <script type="module" src="/src/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

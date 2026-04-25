@@ -243,7 +243,7 @@ export class OverlayScene extends Phaser.Scene {
               const battle = this.scene.get("BattleScene");
               battle.returnToTheme();
               this.scene.stop("BattleScene");
-              this.scene.start(isEndless ? "TitleScene" : "ThemeScene");
+              this.scene.stop();
             },
           },
         ],
@@ -266,8 +266,12 @@ export class OverlayScene extends Phaser.Scene {
           {
             label: "Campaign",
             run: () => {
-              this.game.registry.set("session", returnToCampaign(getSession(this)));
-              this.scene.start("CampaignScene");
+              const nextSession = returnToCampaign(getSession(this));
+              this.game.registry.set("session", nextSession);
+              const battle = this.scene.get("BattleScene");
+              battle.exitToMenu(nextSession);
+              this.scene.stop("BattleScene");
+              this.scene.stop();
             },
           },
         ],
@@ -303,7 +307,7 @@ export class OverlayScene extends Phaser.Scene {
             const battle = this.scene.get("BattleScene");
             battle.returnToTheme();
             this.scene.stop("BattleScene");
-            this.scene.start(isEndless ? "TitleScene" : "ThemeScene");
+            this.scene.stop();
           },
         },
       ],
