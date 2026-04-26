@@ -4,26 +4,41 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "start": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "node --test",
-    "assets:center": "node scripts/center-assets.js",
-    "assets:center:write": "node scripts/center-assets.js --write"
+    "dev": "vite --config vite.config.ts",
+    "start": "vite --config vite.config.ts",
+    "prebuild": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "build": "vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test": "node --import tsx --test",
+    "test:watch": "node --import tsx --test --watch",
+    "test:vitest": "vitest run --config vite.config.ts",
+    "test:vitest:watch": "vitest --config vite.config.ts",
+    "assets:center": "tsx scripts/center-assets.ts",
+    "assets:center:write": "tsx scripts/center-assets.ts --write"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.4",
-    "babel-plugin-react-compiler": "^19.1.0-rc.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "jsdom": "^29.0.2",
     "playwright": "^1.59.1",
     "terser": "^5.46.1",
-    "vite": "^7.1.12"
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.1.12",
+    "vitest": "^4.1.5"
   },
   "dependencies": {
     "lucide-react": "^0.511.0",
     "phaser": "^4.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7"
   }
