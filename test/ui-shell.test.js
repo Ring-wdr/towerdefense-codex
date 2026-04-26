@@ -276,6 +276,17 @@ test("react menu screens import component css modules instead of the old shared 
   assert.match(shopScreenModuleSource, /\.grid\s*\{/);
 });
 
+test("app shell and document root use a fixed viewport to prevent page-level scroll regressions", () => {
+  assert.match(appModuleSource, /\.appRoot\s*\{[\s\S]*height:\s*100vh;/);
+  assert.match(appModuleSource, /@supports\s*\(height:\s*100dvh\)\s*\{[\s\S]*height:\s*100dvh;/);
+  assert.match(appModuleSource, /\.appRoot\s*\{[\s\S]*overflow:\s*hidden;/);
+
+  assert.match(stylesSource, /html,\s*body,\s*#root\s*\{[\s\S]*height:\s*100%;/);
+  assert.match(stylesSource, /body\s*\{[\s\S]*height:\s*100vh;/);
+  assert.match(stylesSource, /body\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(stylesSource, /@supports\s*\(height:\s*100dvh\)\s*\{[\s\S]*body\s*\{[\s\S]*height:\s*100dvh;/);
+});
+
 test("react entry mounts the app shell and app source hydrates tower icon markup", () => {
   assert.match(mainEntrypointSource, /ReactDOM\.createRoot\(document\.getElementById\("root"\)\)\.render\(<App \/>\);/);
   assert.match(appSource, /from "lucide-react"/);
@@ -307,6 +318,11 @@ test("react title and campaign screens preserve the main menu actions", () => {
   assert.match(titleScreenSource, /onOpenShop/);
   assert.match(titleScreenSource, /footerContent=/);
   assert.match(titleScreenSource, />\s*Start Campaign\s*</);
+  assert.match(titleScreenSource, /className=\{screenStyles\.root\}/);
+  assert.match(titleScreenSource, /containerClassName=\{screenStyles\.container\}/);
+  assert.match(titleScreenModuleSource, /\.root\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(titleScreenModuleSource, /\.container[\s\S]*min-height:\s*0;/);
+  assert.match(titleScreenModuleSource, /\.container[\s\S]*overflow:\s*hidden;/);
 
   assert.match(campaignScreenSource, />\s*Back\s*</);
   assert.match(campaignScreenSource, />\s*Briefing\s*</);
@@ -512,8 +528,7 @@ test("campaign screen removes duplicated theme copy and fits a fixed viewport sh
   assert.doesNotMatch(campaignScreenSource, /<span>\s*Theme\s*<\/span>/);
   assert.doesNotMatch(campaignScreenSource, /campaign-card__summary/);
   assert.match(campaignScreenModuleSource, /\.root\s*\{/);
-  assert.match(campaignScreenModuleSource, /height:\s*100vh;/);
-  assert.match(campaignScreenModuleSource, /height:\s*100dvh;/);
+  assert.match(campaignScreenModuleSource, /overflow:\s*hidden;/);
   assert.match(campaignScreenModuleSource, /\.body\s*\{[\s\S]*overflow:\s*hidden;/);
   assert.match(campaignScreenModuleSource, /\.layout\s*\{[\s\S]*min-height:\s*0;/);
 });
@@ -522,16 +537,29 @@ test("theme screen removes duplicated stage detail text and keeps the stage choo
   assert.match(themeScreenSource, /title="Stage Briefing"/);
   assert.match(themeScreenSource, /headerContent=/);
   assert.match(themeScreenSource, /footerContent=/);
-  assert.match(themeScreenSource, /screenStyles\.meta/);
-  assert.match(themeScreenSource, /screenStyles\.stageGrid/);
-  assert.match(themeScreenSource, /screenStyles\.stageLabel/);
-  assert.match(themeScreenSource, /screenStyles\.stageMeta/);
-  assert.doesNotMatch(themeScreenSource, /screenStyles\.stageSummary/);
+  assert.match(themeScreenSource, /screenStyles\.routeStrip/);
+  assert.match(themeScreenSource, /screenStyles\.routeTab/);
+  assert.match(themeScreenSource, /screenStyles\.primaryCard/);
+  assert.match(themeScreenSource, /screenStyles\.metrics/);
+  assert.match(themeScreenSource, /WAVES_PER_STAGE/);
+  assert.doesNotMatch(themeScreenSource, /screenStyles\.stageGrid/);
 
   assert.match(themeScreenModuleSource, /\.layout\s*\{/);
-  assert.match(themeScreenModuleSource, /\.stageGrid\s*\{/);
-  assert.match(themeScreenModuleSource, /\.stageCard\s*\{/);
-  assert.match(themeScreenModuleSource, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(180px,\s*1fr\)\)/);
+  assert.match(themeScreenModuleSource, /\.routeStrip\s*\{/);
+  assert.match(themeScreenModuleSource, /\.routeTab\s*\{/);
+  assert.match(themeScreenModuleSource, /\.primaryCard\s*\{/);
+  assert.match(themeScreenModuleSource, /max-height:\s*820px/);
+  assert.match(themeScreenModuleSource, /max-height:\s*700px/);
+});
+
+test("menu frame and theme screen lock the briefing view into a fixed no-scroll viewport", () => {
+  assert.match(menuFrameModuleSource, /\.frame\s*\{[\s\S]*height:\s*100vh;/);
+  assert.match(menuFrameModuleSource, /@supports\s*\(height:\s*100dvh\)\s*\{[\s\S]*height:\s*100dvh;/);
+  assert.match(menuFrameModuleSource, /\.frame\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(menuFrameModuleSource, /\.container\s*\{[\s\S]*min-height:\s*0;/);
+  assert.doesNotMatch(menuFrameModuleSource, /\.frame\s*\{[\s\S]*min-height:\s*100dvh;/);
+  assert.match(themeScreenModuleSource, /\.footer\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(themeScreenModuleSource, /@media\s*\(max-height:\s*700px\)\s*\{[\s\S]*\.summary/);
 });
 
 test("global stylesheet no longer owns react menu frame and screen layout selectors", () => {
@@ -545,11 +573,14 @@ test("global stylesheet no longer owns react menu frame and screen layout select
 test("shop screen preserves top-level progression stats above the upgrade grid", () => {
   assert.match(shopScreenSource, /headerContent=/);
   assert.match(shopScreenSource, /footerContent=/);
+  assert.match(shopScreenSource, /className=\{screenStyles\.root\}/);
   assert.match(shopScreenSource, /screenStyles\.headerStats/);
   assert.match(shopScreenSource, /screenStyles\.headerStat/);
   assert.match(shopScreenSource, /metaProgress\.currency/);
   assert.match(shopScreenSource, /highestClearedStage/);
   assert.match(shopScreenSource, /aria-label="Meta shop upgrades"/);
+  assert.match(shopScreenModuleSource, /\.root\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(shopScreenModuleSource, /\.container\s*\{[\s\S]*overflow:\s*hidden;/);
 });
 
 test("quick play movement buttons render lucide arrow icons", () => {

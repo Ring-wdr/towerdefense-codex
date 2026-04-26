@@ -1,10 +1,14 @@
 .root {
+  min-height: 0;
+  overflow: hidden;
   padding-bottom: 28px;
 }
 
 .container,
 .body {
   align-content: center;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .footer,
