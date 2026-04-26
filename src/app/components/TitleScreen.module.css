@@ -1,7 +1,6 @@
 .root {
   min-height: 0;
   overflow: hidden;
-  padding-bottom: 28px;
 }
 
 .container,
@@ -9,12 +8,6 @@
   align-content: center;
   min-height: 0;
   overflow: hidden;
-}
-
-.footer,
-.actions {
-  margin-top: auto;
-  padding-top: 20px;
 }
 
 .briefing {
@@ -26,10 +19,4 @@
   color: #f3ecde;
   font: 500 1rem/1.55 "Barlow Condensed", sans-serif;
   letter-spacing: 0.01em;
-}
-
-@media (max-width: 720px) {
-  .root {
-    padding-bottom: 20px;
-  }
 }

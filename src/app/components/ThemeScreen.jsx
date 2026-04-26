@@ -61,8 +61,7 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
         tone="olive"
         className={screenStyles.root}
         containerClassName={screenStyles.container}
-        footerClassName={screenStyles.footer}
-        footerContent={null}
+        footerActions={[{ key: "back", label: "Back", onClick: onBack }]}
       >
         <section className={screenStyles.layout}>
           <section className={screenStyles.mapBoard} aria-hidden="true">
@@ -79,12 +78,6 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
               <h2 className={screenStyles.title}>No Stage Selected</h2>
               <p className={screenStyles.summary}>선택된 전장 정보가 없다.</p>
             </div>
-
-            <div className={screenStyles.hudActions}>
-              <button className={frameStyles.button} type="button" onClick={onBack}>
-                Back
-              </button>
-            </div>
           </section>
         </section>
       </MenuFrame>
@@ -97,6 +90,14 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
   const routeLabel = getRouteLabel(selectedIndex, data.stageNumbers.length);
   const statusLabel = getNodeStatus(stage.number, battleLocked, true, session);
   const statusCopy = getBattleStatusCopy(stage.number, battleLocked, session);
+  const footerActions = [
+    { key: "back", label: "Back", onClick: onBack },
+    {
+      key: "enter-battle",
+      label: battleLocked ? "Locked" : "Enter Battle",
+      onClick: battleLocked ? () => {} : onEnterBattle,
+    },
+  ];
 
   return (
     <MenuFrame
@@ -105,9 +106,8 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
       tone={getThemeTone(stage.theme)}
       className={screenStyles.root}
       containerClassName={screenStyles.container}
-      footerClassName={screenStyles.footer}
       headerContent={<p className={screenStyles.headerStatus}>{routeLabel}</p>}
-      footerContent={null}
+      footerActions={footerActions}
     >
       <section className={screenStyles.layout}>
         <section className={screenStyles.mapBoard} aria-label={`${stage.theme} tactical map`}>
@@ -171,20 +171,6 @@ export default function ThemeScreen({ data, session, onBack, onSelectStage, onEn
             </div>
 
             <p className={screenStyles.summary}>{battleLocked ? LOCKED_COPY : stage.summary}</p>
-          </div>
-
-          <div className={screenStyles.hudActions}>
-            <button className={frameStyles.button} type="button" onClick={onBack}>
-              Back
-            </button>
-            <button
-              className={frameStyles.button}
-              type="button"
-              onClick={battleLocked ? undefined : onEnterBattle}
-              disabled={battleLocked}
-            >
-              {battleLocked ? "Locked" : "Enter Battle"}
-            </button>
           </div>
         </section>
       </section>

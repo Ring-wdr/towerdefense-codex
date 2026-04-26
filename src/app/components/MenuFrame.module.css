@@ -81,10 +81,18 @@
 }
 
 .footer {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-top: 24px;
+}
+
+.footer > * {
+  min-width: 0;
+}
+
+.footer .button {
+  width: 100%;
 }
 
 .kicker {
@@ -163,7 +171,7 @@
   }
 
   .footer {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 }
 

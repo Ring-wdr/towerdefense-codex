@@ -3,21 +3,13 @@ import frameStyles from "./MenuFrame.module.css";
 import screenStyles from "./TitleScreen.module.css";
 
 export default function TitleScreen({ data, onStartCampaign, onOpenShop, onStartEndless }) {
-  const footerContent = (
-    <>
-      <button className={frameStyles.button} type="button" onClick={onStartCampaign}>
-        Start Campaign
-      </button>
-      <button className={frameStyles.button} type="button" onClick={onOpenShop}>
-        Shop
-      </button>
-      {data.isEndlessUnlocked ? (
-        <button className={frameStyles.button} type="button" onClick={onStartEndless}>
-          Endless Mode
-        </button>
-      ) : null}
-    </>
-  );
+  const footerActions = [
+    { key: "start-campaign", label: "Start Campaign", onClick: onStartCampaign },
+    { key: "shop", label: "Shop", onClick: onOpenShop },
+    ...(data.isEndlessUnlocked
+      ? [{ key: "endless-mode", label: "Endless Mode", onClick: onStartEndless }]
+      : []),
+  ];
 
   return (
     <MenuFrame
@@ -26,8 +18,7 @@ export default function TitleScreen({ data, onStartCampaign, onOpenShop, onStart
       tone="olive"
       className={screenStyles.root}
       containerClassName={screenStyles.container}
-      footerClassName={screenStyles.footer}
-      footerContent={footerContent}
+      footerActions={footerActions}
     >
       <article className={`${frameStyles.panel} ${screenStyles.briefing}`}>
         <p className={screenStyles.copy}>{data.helperCopy}</p>

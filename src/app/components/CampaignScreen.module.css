@@ -1,6 +1,5 @@
 .root {
   min-height: 0;
-  padding-bottom: 24px;
   overflow: hidden;
 }
 
@@ -8,12 +7,6 @@
 .body {
   grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
-}
-
-.footer,
-.actions {
-  margin-top: auto;
-  padding-top: 20px;
 }
 
 .stack,

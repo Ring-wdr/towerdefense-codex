@@ -60,6 +60,18 @@ test("app reducer keeps campaign, shop, and battle transitions as pure screen-st
   assert.notEqual(purchasedState.metaProgress.currency, shopState.metaProgress.currency);
 });
 
+test("hydrateAppState restores sequential campaign clears from highestClearedStage", () => {
+  const hydrated = hydrateAppState(createAppState().session, {
+    currency: 120,
+    highestClearedStage: 4,
+    combatUnlocks: {},
+    upgrades: {},
+  });
+
+  assert.equal(hydrated.metaProgress.highestClearedStage, 4);
+  assert.deepEqual(hydrated.session.clearedStages, [1, 2, 3, 4]);
+});
+
 test("battle host passes launch payload and exit callbacks into Phaser", () => {
   assert.match(battleHostSource, /launchPayload/);
   assert.match(battleHostSource, /onExitToMenu/);
@@ -69,7 +81,8 @@ test("battle host passes launch payload and exit callbacks into Phaser", () => {
 test("menu frame exposes explicit header, container, and footer regions without legacy body/actions props", () => {
   assert.match(menuFrameSource, /headerContent/);
   assert.match(menuFrameSource, /containerClassName/);
-  assert.match(menuFrameSource, /footerContent/);
+  assert.match(menuFrameSource, /footerActions/);
+  assert.match(menuFrameSource, /FooterActions/);
   assert.match(menuFrameSource, /<header className=/);
   assert.match(menuFrameSource, /<div className=.*styles\.container/);
   assert.match(menuFrameSource, /<footer className=/);

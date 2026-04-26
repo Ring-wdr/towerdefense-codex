@@ -9,7 +9,7 @@ import {
   selectStage,
 } from "../phaser/state/game-session.js";
 import { createMetaProgress, normalizeMetaProgress } from "../game/meta-progress.js";
-import { getStageDefinition } from "../game/stages.js";
+import { getStageCount, getStageDefinition } from "../game/stages.js";
 
 export const APP_ACTIONS = {
   OPEN_CAMPAIGN: "screen/open-campaign",
@@ -52,15 +52,35 @@ export function createAppState() {
   };
 }
 
+function restoreClearedStages(session, metaProgress) {
+  const restoredStageCount = Math.max(
+    0,
+    Math.min(getStageCount(), Math.trunc(metaProgress.highestClearedStage ?? 0)),
+  );
+  const restoredStages = Array.from({ length: restoredStageCount }, (_, index) => index + 1);
+  const clearedStages = Array.from(
+    new Set([...(session.clearedStages ?? []), ...restoredStages]),
+  ).sort((left, right) => left - right);
+
+  return {
+    ...session,
+    clearedStages,
+  };
+}
+
 export function hydrateAppState(session, metaProgress = createMetaProgress()) {
-  const normalizedSession = session ?? createGameSession();
+  const normalizedMetaProgress = normalizeMetaProgress(metaProgress);
+  const normalizedSession = restoreClearedStages(
+    session ?? createGameSession(),
+    normalizedMetaProgress,
+  );
 
   return {
     scene: normalizedSession.scene,
     selectedTheme: normalizedSession.selectedTheme,
     selectedStage: normalizedSession.selectedStage,
     session: normalizedSession,
-    metaProgress: normalizeMetaProgress(metaProgress),
+    metaProgress: normalizedMetaProgress,
     battleLaunch: null,
   };
 }

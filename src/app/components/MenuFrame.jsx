@@ -1,4 +1,5 @@
 import styles from "./MenuFrame.module.css";
+import FooterActions from "./FooterActions.jsx";
 
 function joinClasses(...values) {
   return values.filter(Boolean).join(" ");
@@ -11,9 +12,8 @@ export default function MenuFrame({
   className = "",
   headerClassName = "",
   containerClassName = "",
-  footerClassName = "",
   headerContent = null,
-  footerContent = null,
+  footerActions = [],
   children,
 }) {
   return (
@@ -27,8 +27,10 @@ export default function MenuFrame({
         {headerContent ? <div className={styles.headerMeta}>{headerContent}</div> : null}
       </header>
       <div className={joinClasses(styles.container, containerClassName)}>{children}</div>
-      {footerContent ? (
-        <footer className={joinClasses(styles.footer, footerClassName)}>{footerContent}</footer>
+      {footerActions.length ? (
+        <footer className={styles.footer}>
+          <FooterActions actions={footerActions} />
+        </footer>
       ) : null}
     </section>
   );

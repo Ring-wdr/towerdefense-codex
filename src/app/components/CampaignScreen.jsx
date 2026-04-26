@@ -30,12 +30,7 @@ export default function CampaignScreen({ data, onBack, onPreviewTheme, onOpenBri
         tone="olive"
         className={screenStyles.root}
         containerClassName={screenStyles.container}
-        footerClassName={screenStyles.footer}
-        footerContent={
-          <button className={frameStyles.button} type="button" onClick={onBack}>
-            Back
-          </button>
-        }
+        footerActions={[{ key: "back", label: "Back", onClick: onBack }]}
       >
         <article className={`${frameStyles.panel} ${screenStyles.hero}`}>
           <p className={screenStyles.summary}>아직 표시할 전선 정보가 없다.</p>
@@ -45,20 +40,10 @@ export default function CampaignScreen({ data, onBack, onPreviewTheme, onOpenBri
   }
 
   const selectedStage = selectedTheme.previewStage;
-  const footerActions = (
-    <>
-      <button className={frameStyles.button} type="button" onClick={onBack}>
-        Back
-      </button>
-      <button
-        className={frameStyles.button}
-        type="button"
-        onClick={() => onOpenBriefing(selectedStage.number)}
-      >
-        Briefing
-      </button>
-    </>
-  );
+  const footerActions = [
+    { key: "back", label: "Back", onClick: onBack },
+    { key: "briefing", label: "Briefing", onClick: () => onOpenBriefing(selectedStage.number) },
+  ];
 
   return (
     <MenuFrame
@@ -67,13 +52,12 @@ export default function CampaignScreen({ data, onBack, onPreviewTheme, onOpenBri
       tone={getThemeTone(selectedTheme.theme)}
       className={screenStyles.root}
       containerClassName={screenStyles.container}
-      footerClassName={screenStyles.footer}
       headerContent={
         <p className={screenStyles.headerStatus}>
           {selectedTheme.theme} · {formatStageRange(selectedTheme.stageNumbers)}
         </p>
       }
-      footerContent={footerActions}
+      footerActions={footerActions}
     >
       <section className={screenStyles.stack}>
         <article className={`${frameStyles.panel} ${screenStyles.hero}`}>

@@ -25,18 +25,13 @@ export default function ShopScreen({ data, metaProgress, onBack, onPurchase }) {
       tone="amber"
       className={screenStyles.root}
       containerClassName={screenStyles.container}
-      footerClassName={screenStyles.footer}
       headerContent={
         <div className={screenStyles.headerStats}>
           <span className={screenStyles.headerStat}>{metaProgress.currency} G</span>
           <span className={screenStyles.headerStat}>Stage {metaProgress.highestClearedStage}</span>
         </div>
       }
-      footerContent={(
-        <button className={frameStyles.button} type="button" onClick={onBack}>
-          Back
-        </button>
-      )}
+      footerActions={[{ key: "back", label: "Back", onClick: onBack }]}
     >
       <article className={`${frameStyles.panel} ${screenStyles.summary}`}>
         <p className={screenStyles.copy}>영구 보급을 정비해 다음 전투의 기본 전력을 끌어올린다.</p>
@@ -52,7 +47,7 @@ export default function ShopScreen({ data, metaProgress, onBack, onPurchase }) {
             </p>
             <p className={screenStyles.detail}>{summary.detailLabel}</p>
             <button
-              className={`${frameStyles.button} ${screenStyles.action}`}
+              className={screenStyles.action}
               type="button"
               disabled={!summary.isPurchaseEnabled}
               onClick={() => {

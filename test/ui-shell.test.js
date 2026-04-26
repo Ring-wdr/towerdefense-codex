@@ -13,6 +13,7 @@ const battleSceneSource = readFileSync(new URL("../src/phaser/scenes/BattleScene
 const overlaySceneSource = readFileSync(new URL("../src/phaser/scenes/OverlayScene.js", import.meta.url), "utf8");
 const menuFrameSource = readFileSync(new URL("../src/app/components/MenuFrame.jsx", import.meta.url), "utf8");
 const menuFrameModuleSource = readFileSync(new URL("../src/app/components/MenuFrame.module.css", import.meta.url), "utf8");
+const footerActionsSource = readFileSync(new URL("../src/app/components/FooterActions.jsx", import.meta.url), "utf8");
 const titleScreenSource = readFileSync(new URL("../src/app/components/TitleScreen.jsx", import.meta.url), "utf8");
 const titleScreenModuleSource = readFileSync(new URL("../src/app/components/TitleScreen.module.css", import.meta.url), "utf8");
 const campaignScreenSource = readFileSync(new URL("../src/app/components/CampaignScreen.jsx", import.meta.url), "utf8");
@@ -314,27 +315,27 @@ test("phaser bootstrap only registers battle and overlay scenes for the active r
 });
 
 test("react title and campaign screens preserve the main menu actions", () => {
-  assert.match(titleScreenSource, />\s*Shop\s*</);
+  assert.match(titleScreenSource, /label:\s*"Shop"/);
   assert.match(titleScreenSource, /onOpenShop/);
-  assert.match(titleScreenSource, /footerContent=/);
-  assert.match(titleScreenSource, />\s*Start Campaign\s*</);
+  assert.match(titleScreenSource, /footerActions=/);
+  assert.match(titleScreenSource, /label:\s*"Start Campaign"/);
   assert.match(titleScreenSource, /className=\{screenStyles\.root\}/);
   assert.match(titleScreenSource, /containerClassName=\{screenStyles\.container\}/);
   assert.match(titleScreenModuleSource, /\.root\s*\{[\s\S]*overflow:\s*hidden;/);
   assert.match(titleScreenModuleSource, /\.container[\s\S]*min-height:\s*0;/);
   assert.match(titleScreenModuleSource, /\.container[\s\S]*overflow:\s*hidden;/);
 
-  assert.match(campaignScreenSource, />\s*Back\s*</);
-  assert.match(campaignScreenSource, />\s*Briefing\s*</);
+  assert.match(campaignScreenSource, /label:\s*"Back"/);
+  assert.match(campaignScreenSource, /label:\s*"Briefing"/);
   assert.match(campaignScreenSource, /onPreviewTheme/);
   assert.match(campaignScreenSource, /onOpenBriefing/);
   assert.match(campaignScreenSource, /headerContent=/);
-  assert.match(campaignScreenSource, /footerContent=/);
+  assert.match(campaignScreenSource, /footerActions=/);
 });
 
 test("title screen exposes endless mode only through campaign-clear meta progress", () => {
   assert.match(screenDataSource, /highestClearedStage\s*>=\s*getStageCount\(\)/);
-  assert.match(titleScreenSource, /Endless Mode/);
+  assert.match(titleScreenSource, /label:\s*"Endless Mode"/);
   assert.match(appSource, /APP_ACTIONS\.LAUNCH_ENDLESS/);
 });
 
@@ -516,11 +517,12 @@ test("shop screen renders combat unlock cards with a dedicated category style", 
 test("campaign screen keeps preview selection separate from the briefing action", () => {
   assert.match(campaignScreenSource, /onPreviewTheme/);
   assert.match(campaignScreenSource, /onOpenBriefing/);
-  assert.match(campaignScreenSource, /footerContent=\{footerActions\}/);
+  assert.match(campaignScreenSource, /footerActions=\{footerActions\}/);
   assert.match(campaignScreenSource, /Campaign themes/);
 });
 
 test("campaign screen removes duplicated theme copy and fits a fixed viewport shell", () => {
+  assert.match(campaignScreenSource, /import frameStyles from "\.\/MenuFrame\.module\.css";/);
   assert.match(campaignScreenSource, /title="Stage Command"/);
   assert.match(campaignScreenSource, /screenStyles\.route/);
   assert.match(campaignScreenSource, /screenStyles\.label/);
@@ -536,12 +538,11 @@ test("campaign screen removes duplicated theme copy and fits a fixed viewport sh
 test("theme screen uses a world-map node board with a bottom hud instead of stacked web cards", () => {
   assert.match(themeScreenSource, /title="Stage Briefing"/);
   assert.match(themeScreenSource, /headerContent=/);
-  assert.match(themeScreenSource, /footerContent=/);
+  assert.match(themeScreenSource, /footerActions=/);
   assert.match(themeScreenSource, /screenStyles\.mapBoard/);
   assert.match(themeScreenSource, /screenStyles\.mapLane/);
   assert.match(themeScreenSource, /screenStyles\.nodeButton/);
   assert.match(themeScreenSource, /screenStyles\.hudPanel/);
-  assert.match(themeScreenSource, /screenStyles\.hudActions/);
   assert.match(themeScreenSource, /WAVES_PER_STAGE/);
   assert.doesNotMatch(themeScreenSource, /screenStyles\.routeStrip/);
   assert.doesNotMatch(themeScreenSource, /screenStyles\.primaryCard/);
@@ -561,8 +562,45 @@ test("menu frame and theme screen lock the briefing view into a fixed no-scroll 
   assert.match(menuFrameModuleSource, /\.frame\s*\{[\s\S]*overflow:\s*hidden;/);
   assert.match(menuFrameModuleSource, /\.container\s*\{[\s\S]*min-height:\s*0;/);
   assert.doesNotMatch(menuFrameModuleSource, /\.frame\s*\{[\s\S]*min-height:\s*100dvh;/);
-  assert.match(themeScreenModuleSource, /\.footer\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(themeScreenModuleSource, /@media\s*\(max-height:\s*700px\)\s*\{[\s\S]*\.mapBoard/);
+});
+
+test("theme screen moves Back and Enter Battle actions into the shared footer", () => {
+  assert.match(themeScreenSource, /const footerActions = \[/);
+  assert.match(themeScreenSource, /footerActions=\{footerActions\}/);
+  assert.doesNotMatch(themeScreenSource, /<div className=\{screenStyles\.hudActions\}>[\s\S]*Enter Battle/);
+  assert.match(themeScreenSource, /label:\s*battleLocked \? "Locked" : "Enter Battle"/);
+});
+
+test("menu frame delegates footer rendering to a shared action component with data-only props", () => {
+  assert.match(menuFrameSource, /import FooterActions from "\.\/FooterActions\.jsx";/);
+  assert.match(menuFrameSource, /footerActions = \[\]/);
+  assert.match(menuFrameSource, /<FooterActions actions=\{footerActions\} \/>/);
+  assert.doesNotMatch(menuFrameSource, /footerContent/);
+  assert.match(footerActionsSource, /export default function FooterActions\(\{ actions \}\)/);
+  assert.match(footerActionsSource, /actions\.map\(\(\{ key, label, onClick \}\) =>/);
+  assert.doesNotMatch(titleScreenSource, /footerClassName=/);
+  assert.doesNotMatch(campaignScreenSource, /footerClassName=/);
+  assert.doesNotMatch(themeScreenSource, /footerClassName=/);
+  assert.doesNotMatch(shopScreenSource, /footerClassName=/);
+});
+
+test("menu frame owns a unified footer action layout across screens", () => {
+  assert.match(
+    menuFrameModuleSource,
+    /\.footer\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(180px,\s*1fr\)\);/,
+  );
+  assert.match(
+    menuFrameModuleSource,
+    /@media\s*\(max-width:\s*720px\)\s*\{[\s\S]*\.footer\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
+  );
+});
+
+test("page-level screen roots no longer add their own footer-bottom padding", () => {
+  assert.doesNotMatch(titleScreenModuleSource, /\.root\s*\{[\s\S]*padding-bottom:/);
+  assert.doesNotMatch(campaignScreenModuleSource, /\.root\s*\{[\s\S]*padding-bottom:/);
+  assert.doesNotMatch(themeScreenModuleSource, /\.root\s*\{[\s\S]*padding-bottom:/);
+  assert.doesNotMatch(shopScreenModuleSource, /\.root\s*\{[\s\S]*padding-bottom:/);
 });
 
 test("global stylesheet no longer owns react menu frame and screen layout selectors", () => {
@@ -574,8 +612,9 @@ test("global stylesheet no longer owns react menu frame and screen layout select
 });
 
 test("shop screen preserves top-level progression stats above the upgrade grid", () => {
+  assert.match(shopScreenSource, /import frameStyles from "\.\/MenuFrame\.module\.css";/);
   assert.match(shopScreenSource, /headerContent=/);
-  assert.match(shopScreenSource, /footerContent=/);
+  assert.match(shopScreenSource, /footerActions=/);
   assert.match(shopScreenSource, /className=\{screenStyles\.root\}/);
   assert.match(shopScreenSource, /screenStyles\.headerStats/);
   assert.match(shopScreenSource, /screenStyles\.headerStat/);

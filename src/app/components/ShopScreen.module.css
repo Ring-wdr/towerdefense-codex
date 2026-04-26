@@ -1,6 +1,5 @@
 .root {
   min-height: 0;
-  padding-bottom: 28px;
   overflow: hidden;
 }
 
@@ -10,10 +9,6 @@
   gap: 18px;
   min-height: 0;
   overflow: hidden;
-}
-
-.footer {
-  margin-top: 20px;
 }
 
 .headerStats {
@@ -104,19 +99,12 @@
 }
 
 .action {
-  justify-self: start;
-  min-width: 108px;
+  width: 100%;
   margin-top: auto;
 }
 
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .root {
-    padding-bottom: 20px;
   }
 }
