@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { GameSession } from "./phaser/state/game-session";
 import type { MetaProgress } from "./game/meta-progress";
@@ -19,35 +19,18 @@ interface StartGameModule {
   ) => PhaserRuntime;
 }
 
-export interface PhaserGameHandle {
-  readonly game: PhaserRuntime | null;
-}
-
 export interface PhaserGameProps {
   launchPayload: BattleLaunchPayload | null;
   onExitToMenu: (session: GameSession, metaProgress: MetaProgress) => void;
   controlsRootRef: RefObject<HTMLElement | null>;
 }
 
-const PhaserGame = forwardRef<PhaserGameHandle, PhaserGameProps>(function PhaserGame(
-  { launchPayload, onExitToMenu, controlsRootRef },
-  ref,
-) {
+export default function PhaserGame({ launchPayload, onExitToMenu, controlsRootRef }: PhaserGameProps) {
   const gameContainer = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<PhaserRuntime | null>(null);
   const onExitToMenuRef = useRef(onExitToMenu);
 
   onExitToMenuRef.current = onExitToMenu;
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      get game() {
-        return gameRef.current;
-      },
-    }),
-    [],
-  );
 
   useEffect(() => {
     if (!launchPayload || gameRef.current || !gameContainer.current) {
@@ -84,6 +67,4 @@ const PhaserGame = forwardRef<PhaserGameHandle, PhaserGameProps>(function Phaser
   }, [launchPayload, controlsRootRef]);
 
   return <div id="game-root" ref={gameContainer} className="game-root" aria-label="Tower defense game"></div>;
-});
-
-export default PhaserGame;
+}
