@@ -533,21 +533,24 @@ test("campaign screen removes duplicated theme copy and fits a fixed viewport sh
   assert.match(campaignScreenModuleSource, /\.layout\s*\{[\s\S]*min-height:\s*0;/);
 });
 
-test("theme screen removes duplicated stage detail text and keeps the stage chooser compact", () => {
+test("theme screen uses a world-map node board with a bottom hud instead of stacked web cards", () => {
   assert.match(themeScreenSource, /title="Stage Briefing"/);
   assert.match(themeScreenSource, /headerContent=/);
   assert.match(themeScreenSource, /footerContent=/);
-  assert.match(themeScreenSource, /screenStyles\.routeStrip/);
-  assert.match(themeScreenSource, /screenStyles\.routeTab/);
-  assert.match(themeScreenSource, /screenStyles\.primaryCard/);
-  assert.match(themeScreenSource, /screenStyles\.metrics/);
+  assert.match(themeScreenSource, /screenStyles\.mapBoard/);
+  assert.match(themeScreenSource, /screenStyles\.mapLane/);
+  assert.match(themeScreenSource, /screenStyles\.nodeButton/);
+  assert.match(themeScreenSource, /screenStyles\.hudPanel/);
+  assert.match(themeScreenSource, /screenStyles\.hudActions/);
   assert.match(themeScreenSource, /WAVES_PER_STAGE/);
-  assert.doesNotMatch(themeScreenSource, /screenStyles\.stageGrid/);
+  assert.doesNotMatch(themeScreenSource, /screenStyles\.routeStrip/);
+  assert.doesNotMatch(themeScreenSource, /screenStyles\.primaryCard/);
 
   assert.match(themeScreenModuleSource, /\.layout\s*\{/);
-  assert.match(themeScreenModuleSource, /\.routeStrip\s*\{/);
-  assert.match(themeScreenModuleSource, /\.routeTab\s*\{/);
-  assert.match(themeScreenModuleSource, /\.primaryCard\s*\{/);
+  assert.match(themeScreenModuleSource, /\.mapBoard\s*\{/);
+  assert.match(themeScreenModuleSource, /\.mapLane\s*\{/);
+  assert.match(themeScreenModuleSource, /\.nodeButton\s*\{/);
+  assert.match(themeScreenModuleSource, /\.hudPanel\s*\{/);
   assert.match(themeScreenModuleSource, /max-height:\s*820px/);
   assert.match(themeScreenModuleSource, /max-height:\s*700px/);
 });
@@ -559,7 +562,7 @@ test("menu frame and theme screen lock the briefing view into a fixed no-scroll 
   assert.match(menuFrameModuleSource, /\.container\s*\{[\s\S]*min-height:\s*0;/);
   assert.doesNotMatch(menuFrameModuleSource, /\.frame\s*\{[\s\S]*min-height:\s*100dvh;/);
   assert.match(themeScreenModuleSource, /\.footer\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(themeScreenModuleSource, /@media\s*\(max-height:\s*700px\)\s*\{[\s\S]*\.summary/);
+  assert.match(themeScreenModuleSource, /@media\s*\(max-height:\s*700px\)\s*\{[\s\S]*\.mapBoard/);
 });
 
 test("global stylesheet no longer owns react menu frame and screen layout selectors", () => {
