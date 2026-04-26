@@ -3,11 +3,13 @@ import type { OutputBundle, NormalizedOutputOptions } from "rollup";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 
 const APP_NAME = "Tower Defense";
+const APP_SHORT_NAME = "Tower Defense";
 const APP_DESCRIPTION =
   "Lightweight wave-based tower defense with campaign progression, touchscreen support, and offline-ready play.";
 const APP_THEME_COLOR = "#1b2a28";
 const APP_BACKGROUND_COLOR = "#14201f";
 const MANIFEST_FILE_NAME = "manifest.webmanifest";
+const APP_CATEGORIES = ["games", "strategy", "entertainment"] as const;
 const ICON_DEFINITIONS = [
   {
     fileName: "icons/icon-192.png",
@@ -24,6 +26,34 @@ const ICON_DEFINITIONS = [
     sizes: "512x512",
     type: "image/png",
     purpose: "any maskable",
+  },
+] as const;
+const SCREENSHOT_DEFINITIONS = [
+  {
+    fileName: "screenshots/install-home.png",
+    sizes: "668x552",
+    type: "image/png",
+    label: "Main command screen and install-ready shell",
+  },
+  {
+    fileName: "screenshots/install-battle.png",
+    sizes: "668x552",
+    type: "image/png",
+    label: "Battle overlay and in-run controls",
+  },
+] as const;
+const APP_SHORTCUTS = [
+  {
+    name: "Start Campaign",
+    short_name: "Campaign",
+    description: "Open the campaign front and choose a stage.",
+    url: "",
+  },
+  {
+    name: "Open Meta Shop",
+    short_name: "Shop",
+    description: "Jump back into the permanent upgrade shop.",
+    url: "?screen=shop",
   },
 ] as const;
 
@@ -58,19 +88,32 @@ export function joinBase(base: BasePath, path = ""): string {
 
 export function createManifest(base: BasePath) {
   return {
-    id: "tower-defense",
+    id: joinBase(base),
+    lang: "ko-KR",
+    dir: "ltr",
     name: APP_NAME,
-    short_name: APP_NAME,
+    short_name: APP_SHORT_NAME,
     description: APP_DESCRIPTION,
     start_url: joinBase(base),
     scope: joinBase(base),
+    display_override: ["standalone", "minimal-ui"],
     display: "standalone",
-    orientation: "landscape",
+    orientation: "portrait-primary",
     background_color: APP_BACKGROUND_COLOR,
     theme_color: APP_THEME_COLOR,
+    categories: [...APP_CATEGORIES],
+    prefer_related_applications: false,
     icons: ICON_DEFINITIONS.map((icon) => ({
       ...icon,
       src: joinBase(base, icon.fileName),
+    })),
+    screenshots: SCREENSHOT_DEFINITIONS.map((screenshot) => ({
+      ...screenshot,
+      src: joinBase(base, screenshot.fileName),
+    })),
+    shortcuts: APP_SHORTCUTS.map((shortcut) => ({
+      ...shortcut,
+      url: joinBase(base, shortcut.url),
     })),
   };
 }
@@ -94,6 +137,7 @@ export function createPrecacheUrls(
     joinBase(base, "favicon.png"),
     joinBase(base, "apple-touch-icon.png"),
     ...ICON_DEFINITIONS.map((icon) => joinBase(base, icon.fileName)),
+    ...SCREENSHOT_DEFINITIONS.map((screenshot) => joinBase(base, screenshot.fileName)),
   ]);
 
   for (const fileName of [...bundleFileNames].sort()) {

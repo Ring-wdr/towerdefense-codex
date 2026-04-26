@@ -21,9 +21,15 @@ if (process.env.VITEST) {
     test("creates a manifest with base-aware icon urls", async () => {
       const { createManifest } = await import(new URL("../vite/pwa.ts", import.meta.url).href);
 
-      expect(createManifest("/tower-defense/").icons[0]?.src).toBe(
-        "/tower-defense/icons/icon-192.png",
-      );
+      const manifest = createManifest("/tower-defense/");
+
+      expect(manifest.id).toBe("/tower-defense/");
+      expect(manifest.prefer_related_applications).toBe(false);
+      expect(manifest.orientation).toBe("portrait-primary");
+      expect(manifest.icons[0]?.src).toBe("/tower-defense/icons/icon-192.png");
+      expect(manifest.screenshots[0]?.src).toBe("/tower-defense/screenshots/install-home.png");
+      expect(manifest.shortcuts[0]?.url).toBe("/tower-defense/");
+      expect(manifest.shortcuts[1]?.url).toBe("/tower-defense/?screen=shop");
     });
 
     test("includes shell files, icons, and emitted bundles in the precache list", async () => {
@@ -46,6 +52,8 @@ if (process.env.VITEST) {
         "./icons/icon-192.png",
         "./icons/icon-512.png",
         "./icons/icon-maskable-512.png",
+        "./screenshots/install-home.png",
+        "./screenshots/install-battle.png",
         "./assets/index-abc123.css",
         "./assets/index-abc123.js",
       ]);
