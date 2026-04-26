@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
+import { Toaster, toast } from "sonner";
 import attackTowerIconUrl from "./assets/towers/attack-v2.png";
 import cannonTowerIconUrl from "./assets/towers/cannon-v2.png";
 import hunterTowerIconUrl from "./assets/towers/hunter-v2.png";
@@ -23,6 +24,8 @@ import ThemeScreen from "./app/components/ThemeScreen.jsx";
 import TitleScreen from "./app/components/TitleScreen.jsx";
 import { purchaseUpgrade } from "./game/meta-shop.js";
 import { loadMetaProgress, saveMetaProgress } from "./game/meta-progress.js";
+import { activateServiceWorkerUpdate } from "./pwa/register-service-worker.js";
+import { subscribeToServiceWorkerUpdateReady } from "./pwa/update-notifier.js";
 import appStyles from "./App.module.css";
 
 const BROWSER_SAFE_BOTTOM_VAR = "--browser-safe-bottom";
@@ -68,6 +71,7 @@ export default function App() {
   const [appState, dispatch] = useReducer(appReducer, undefined, () =>
     initializeAppState(loadMetaProgress()),
   );
+  const updateToastIdRef = useRef(null);
 
   useEffect(() => {
     syncBrowserSafeBottomInset();
@@ -104,6 +108,36 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToServiceWorkerUpdateReady(() => {
+      if (updateToastIdRef.current) {
+        return;
+      }
+
+      updateToastIdRef.current = toast.info("A new version is ready.", {
+        action: {
+          label: "Refresh now",
+          onClick: async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+
+            if (activateServiceWorkerUpdate(registration)) {
+              toast.dismiss(updateToastIdRef.current);
+              updateToastIdRef.current = null;
+            }
+          },
+        },
+        duration: Infinity,
+        onDismiss() {
+          updateToastIdRef.current = null;
+        },
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const titleData = getTitleScreenData(appState.session, appState.metaProgress);
   const campaignData = getCampaignScreenData(appState.session);
   const themeData = getThemeScreenData(appState.session);
@@ -111,6 +145,7 @@ export default function App() {
 
   return (
     <main className={appStyles.appRoot}>
+      <Toaster position="top-center" richColors />
       {appState.scene === "title" && (
         <TitleScreen
           data={titleData}
